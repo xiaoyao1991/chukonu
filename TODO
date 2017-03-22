@@ -1,0 +1,16 @@
+1. log replay
+2. distributed
+3. modular
+4. logic controller
+5. listener
+6. randomness?
+7. CICD
+8. Prompt, plan design wizard?
+9. plan inheritance?
+10. cli control panel(use screen?)
+11. global var -- set as a map, and use get function to get by keyname
+12. flat test plan
+13. pluggable file parser to provide data when testing  -- think of a way to inject implementations thru interfaces
+14. datetime generator
+15. Entire workflow as pipeline? connected with channel
+16. Controllers: distribution controller, loop controller, 
