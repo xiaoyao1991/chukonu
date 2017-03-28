@@ -7,7 +7,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
 var index = require('./routes/index');
-
+var expressMetrics = require('express-metrics');
 var app = express();
 
 // create a write stream (in append mode)
@@ -15,6 +15,11 @@ var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
 
 // setup the logger
 app.use(morgan('combined', {stream: accessLogStream}))
+
+// metrics
+app.use(expressMetrics({
+  port: 3001
+}));
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));

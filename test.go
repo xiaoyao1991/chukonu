@@ -49,15 +49,28 @@ func (m *MyRequestProvider) Provide() chan core.ChukonuRequest {
 
 func (m *MyRequestProvider) Gen() {
 	queue := m.Provide()
-	for i := 0; i < 100; i++ {
+
+	throttle := time.Tick(200 * time.Millisecond)
+	i := 0
+	for {
+		<-throttle
 		fmt.Printf("Generating %dth request\n", i)
 		req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:3000/%d", i), nil)
 		if err != nil {
 			fmt.Println(err)
 		}
 		queue <- core.ChukonuHttpRequest{Request: req}
+		i++
 	}
-	close(queue)
+	// for i := 0; i < 100; i++ {
+	// 	fmt.Printf("Generating %dth request\n", i)
+	// 	req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:3000/%d", i), nil)
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// 	queue <- core.ChukonuHttpRequest{Request: req}
+	// }
+	// close(queue)
 }
 
 func main() {
