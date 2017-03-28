@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/xiaoyao1991/chukonu/core"
@@ -76,12 +75,6 @@ func main() {
 	// fmt.Println(string(bodyBytes))
 
 	provider := &MyRequestProvider{}
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		provider.Gen()
-	}()
+	go provider.Gen()
 	pool.Start(httpengine, provider, config)
-	wg.Wait()
 }
