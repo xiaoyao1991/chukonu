@@ -19,7 +19,7 @@ type ChukonuResponse interface {
 }
 
 type RequestProvider interface {
-	Provide() <-chan ChukonuRequest
+	Provide() chan ChukonuRequest
 }
 
 type ChukonuConfig struct {
@@ -34,6 +34,10 @@ type ChukonuConfig struct {
 type SLA struct {
 	LatencySLA    map[float32]float64 // percentile to SLA
 	ThroughputSLA map[float32]float64 // percentile to SLA
+}
+
+type ResponseValidator interface {
+	Validate(response ChukonuResponse) bool
 }
 
 type RequestThrottler interface {

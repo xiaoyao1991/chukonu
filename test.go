@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/xiaoyao1991/chukonu/core"
@@ -35,19 +36,52 @@ import (
 // 	}
 // }
 
+type MyRequestProvider struct {
+	queue chan core.ChukonuRequest
+}
+
+func (m *MyRequestProvider) Provide() chan core.ChukonuRequest {
+	if m.queue == nil {
+		m.queue = make(chan core.ChukonuRequest, 5)
+	}
+
+	return m.queue
+}
+
+func (m *MyRequestProvider) Gen() {
+	queue := m.Provide()
+	for i := 0; i < 100; i++ {
+		fmt.Printf("Generating %dth request\n", i)
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:3000/%d", i), nil)
+		if err != nil {
+			fmt.Println(err)
+		}
+		queue <- core.ChukonuHttpRequest{Request: req}
+	}
+	close(queue)
+}
+
 func main() {
-	httpengine := core.NewHttpEngine(core.ChukonuConfig{RequestTimeout: 5 * time.Second})
-	req, err := http.NewRequest("GET", "http://localhost:3000", nil)
-	if err != nil {
-		fmt.Println(err)
-	}
-	resp, err := httpengine.RunRequest(core.ChukonuHttpRequest{
-		Request: req,
-	})
+	config := core.ChukonuConfig{Concurrency: 5, RequestTimeout: 5 * time.Second}
+	httpengine := core.NewHttpEngine(config)
+	var pool core.Pool
 
-	if err != nil {
-		fmt.Println(err)
-	}
+	// rawResp := resp.RawResponse().(*http.Response)
+	// defer rawResp.Body.Close()
+	// bodyBytes, err := ioutil.ReadAll(rawResp.Body)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+	// fmt.Println(string(bodyBytes))
 
-	fmt.Println(resp.Status())
+	provider := &MyRequestProvider{}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		provider.Gen()
+	}()
+	pool.Start(httpengine, provider, config)
+	wg.Wait()
 }
