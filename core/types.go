@@ -1,56 +1,56 @@
 package core
 
-import (
-	"net/http"
-	"time"
-)
+import "time"
 
 const (
 	MicrosecondsInOneSecond = 1e6
 )
 
 type ChukonuRequest interface {
-	// Unwrap and get the actual request
-	Request() interface{}
+	RawRequest() interface{} // Unwrap and get the actual request
 	Timeout() time.Duration
 }
 
 type ChukonuResponse interface {
 	Duration() time.Duration
-	Err() error
-	Status() int
-	Size() int
+	Status() string
+	Size() int64
 	RawResponse() interface{}
 }
 
-type RequestProvider <-chan ChukonuRequest
+type RequestProvider interface {
+	Provide() <-chan ChukonuRequest
+}
 
 type ChukonuConfig struct {
-	Name        string
 	Concurrency int
 	WarmUp      time.Duration
 	Iterations  int
-	Timeout     time.Duration
+	// Cookie????
+	TotalTimeout   time.Duration
+	RequestTimeout time.Duration
 }
 
-type ChukonuHttpRequest http.Request
-type ChukonuHttpResponse http.Response
-
-func (c *ChukonuHttpRequest) Request() interface{} {
-	return c
-}
-
-func (c *ChukonuHttpResponse) RawResponse() interface{} {
-	return c
+type SLA struct {
+	LatencySLA    map[float32]float64 // percentile to SLA
+	ThroughputSLA map[float32]float64 // percentile to SLA
 }
 
 type RequestThrottler interface {
-	Throttler() <-chan time.Time
+	Throttle() <-chan time.Time
 }
 
 type Engine interface {
-	Register(discoveryAddress string) error
-	Run(requestProvider RequestProvider) error
-	RunRequest(request ChukonuRequest) error
-	Err() error
+	// LoadMetricsManager(metricsManager MetricsManager) error
+	// Run(requestProvider RequestProvider) error
+	RunRequest(request ChukonuRequest) (ChukonuResponse, error)
+}
+
+type MetricsManager interface {
+	RecordRequest(request ChukonuRequest) error
+	RecordResponse(response ChukonuResponse) error
+}
+
+type LogReplayer interface {
+	ParseLog(filename string) RequestProvider
 }
