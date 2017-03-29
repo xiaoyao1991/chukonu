@@ -2,6 +2,7 @@ package impl
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/xiaoyao1991/chukonu/core"
 )
@@ -15,13 +16,11 @@ type HttpMetricsManager struct {
 func (m *HttpMetricsManager) RecordRequest(request core.ChukonuRequest) {
 }
 func (m *HttpMetricsManager) RecordResponse(response core.ChukonuResponse) {
-	fmt.Println("")
 }
 func (m *HttpMetricsManager) RecordError(err error) {
 }
 
 func (m *HttpMetricsManager) RecordThroughput(t float64) {
-
 	fmt.Printf("Sent: %v, time: %v, throughput: %v\n", m.requestSent, t, float64(m.requestSent)/t)
 }
 func (m *HttpMetricsManager) GetQueue() chan int {
@@ -46,6 +45,17 @@ func (m *HttpMetricsManager) MeasureThroughput() {
 	}
 }
 
-// func (m *HttpMetricsManager) SampleThroughput() {
-//
-// }
+func (m *HttpMetricsManager) SampleThroughput() {
+	preRequestSent := m.requestSent
+	windowRequestSent := 0
+	startTime := time.Now()
+	tick := time.Tick(1 * time.Second)
+	for {
+		<-tick
+		windowRequestSent = m.requestSent - preRequestSent
+		preRequestSent = m.requestSent
+		elapseTime := time.Since(startTime)
+		fmt.Println("Throughput/sec: ", windowRequestSent)
+		fmt.Println("cumulative: ", float64(m.requestSent)/elapseTime.Seconds())
+	}
+}

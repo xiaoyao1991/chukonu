@@ -61,6 +61,7 @@ type MetricsManager interface {
 	MeasureThroughput()
 	RecordThroughput(sec float64)
 	GetThroughput() int
+	SampleThroughput()
 }
 
 type LogReplayer interface {

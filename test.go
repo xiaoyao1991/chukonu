@@ -55,7 +55,7 @@ func (m *MyRequestProvider) Gen() {
 	i := 0
 	for {
 		<-throttle
-		fmt.Printf("Generating %dth request\n", i)
+		// fmt.Printf("Generating %dth request\n", i)
 		req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:3000/%d", i), nil)
 		if err != nil {
 			fmt.Println(err)
