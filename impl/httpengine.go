@@ -1,13 +1,14 @@
-package core
+package impl
 
 import (
 	"net/http"
 	"time"
+
+	"github.com/xiaoyao1991/chukonu/core"
 )
 
 type HttpEngine struct {
-	metricsManager MetricsManager
-	config         ChukonuConfig
+	config core.ChukonuConfig
 	http.Client
 }
 
@@ -47,7 +48,7 @@ func (c ChukonuHttpResponse) Size() int64 {
 	return c.Response.ContentLength
 }
 
-func NewHttpEngine(config ChukonuConfig) *HttpEngine {
+func NewHttpEngine(config core.ChukonuConfig) *HttpEngine {
 	return &HttpEngine{
 		config: config,
 		Client: http.Client{
@@ -58,12 +59,7 @@ func NewHttpEngine(config ChukonuConfig) *HttpEngine {
 	}
 }
 
-func (e *HttpEngine) LoadMetricsManager(metricsManager MetricsManager) error {
-	e.metricsManager = metricsManager
-	return nil
-}
-
-func (e *HttpEngine) RunRequest(request ChukonuRequest) (ChukonuResponse, error) {
+func (e *HttpEngine) RunRequest(request core.ChukonuRequest) (core.ChukonuResponse, error) {
 	start := time.Now()
 	resp, err := e.Do(request.RawRequest().(*http.Request))
 	duration := time.Since(start)

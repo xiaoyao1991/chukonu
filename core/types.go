@@ -41,7 +41,7 @@ type ResponseValidator interface {
 }
 
 type RequestThrottler interface {
-	Throttle() <-chan time.Time
+	Throttle() chan time.Time
 }
 
 type Engine interface {
@@ -51,8 +51,9 @@ type Engine interface {
 }
 
 type MetricsManager interface {
-	RecordRequest(request ChukonuRequest) error
-	RecordResponse(response ChukonuResponse) error
+	RecordRequest(request ChukonuRequest)
+	RecordResponse(response ChukonuResponse)
+	RecordError(err error)
 }
 
 type LogReplayer interface {

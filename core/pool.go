@@ -8,7 +8,7 @@ import (
 type Pool struct {
 }
 
-func (p Pool) Start(engine Engine, provider RequestProvider, config ChukonuConfig) {
+func (p Pool) Start(engine Engine, provider RequestProvider, metricsManager MetricsManager, config ChukonuConfig) {
 	var wg sync.WaitGroup
 	wg.Add(config.Concurrency)
 
@@ -17,12 +17,15 @@ func (p Pool) Start(engine Engine, provider RequestProvider, config ChukonuConfi
 		go func(i int) {
 			defer wg.Done()
 			for req := range queue {
+				metricsManager.RecordRequest(req)
 				fmt.Println(fmt.Sprintf("goroutine %d running request...", i))
 				resp, err := engine.RunRequest(req)
 				if err != nil {
 					fmt.Println(err)
-					return
+					metricsManager.RecordError(err)
+					continue
 				}
+				metricsManager.RecordResponse(resp)
 				fmt.Println("\t" + resp.Status())
 			}
 		}(i)

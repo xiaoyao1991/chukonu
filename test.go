@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/xiaoyao1991/chukonu/core"
+	"github.com/xiaoyao1991/chukonu/impl"
 )
 
 // func consume(id int, queue chan int) {
@@ -59,23 +60,20 @@ func (m *MyRequestProvider) Gen() {
 		if err != nil {
 			fmt.Println(err)
 		}
-		queue <- core.ChukonuHttpRequest{Request: req}
+		queue <- impl.ChukonuHttpRequest{Request: req}
 		i++
+
+		if i == 100 {
+			break
+		}
 	}
-	// for i := 0; i < 100; i++ {
-	// 	fmt.Printf("Generating %dth request\n", i)
-	// 	req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:3000/%d", i), nil)
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 	}
-	// 	queue <- core.ChukonuHttpRequest{Request: req}
-	// }
-	// close(queue)
+
+	close(queue)
 }
 
 func main() {
 	config := core.ChukonuConfig{Concurrency: 5, RequestTimeout: 5 * time.Second}
-	httpengine := core.NewHttpEngine(config)
+	httpengine := impl.NewHttpEngine(config)
 	var pool core.Pool
 
 	// rawResp := resp.RawResponse().(*http.Response)
@@ -89,5 +87,5 @@ func main() {
 
 	provider := &MyRequestProvider{}
 	go provider.Gen()
-	pool.Start(httpengine, provider, config)
+	pool.Start(httpengine, provider, &impl.HttpMetricsManager{}, config)
 }
