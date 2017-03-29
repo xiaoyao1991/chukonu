@@ -9,6 +9,8 @@ const (
 type ChukonuRequest interface {
 	RawRequest() interface{} // Unwrap and get the actual request
 	Timeout() time.Duration
+	//TODO
+	//getValidator() func(ChukonuRequest, ChukonuResponse) bool
 }
 
 type ChukonuResponse interface {
@@ -54,6 +56,11 @@ type MetricsManager interface {
 	RecordRequest(request ChukonuRequest)
 	RecordResponse(response ChukonuResponse)
 	RecordError(err error)
+	// RecordThroughput(throughput float64)
+	GetQueue() chan int
+	MeasureThroughput()
+	RecordThroughput(sec float64)
+	GetThroughput() int
 }
 
 type LogReplayer interface {

@@ -87,5 +87,7 @@ func main() {
 
 	provider := &MyRequestProvider{}
 	go provider.Gen()
-	pool.Start(httpengine, provider, &impl.HttpMetricsManager{}, config)
+
+	//add response
+	pool.Start(httpengine, provider, impl.NewHttpMetricsManager(), config)
 }
