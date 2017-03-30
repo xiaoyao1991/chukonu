@@ -1,0 +1,6 @@
+trap "exit" INT
+for i in `seq 1 310`; do
+smem -c "name pss" | grep druid >> benchmark/mem_chukonu_10.log
+ps -C druidtest -o %cpu | sed -n 2p >> benchmark/cpu_chukonu_10.log
+sleep 1
+done 

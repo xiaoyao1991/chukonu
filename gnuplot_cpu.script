@@ -1,0 +1,19 @@
+set terminal pngcairo  background "#ffffff" enhanced fontscale 1.0 size 800, 600
+set output "cpu-graph.png"
+
+set style function linespoints
+set ylabel "%cpu"
+set xlabel "Seconds"
+set title "%CPU consumption"
+set ytics nomirror in
+
+set yrange [0:50]
+
+set style line 1 lc rgb "#FF0055" lt 2
+
+plot "benchmark/cpu_java_100.log" using 1 with linespoints pt 1  pi 10 title "Jmeter-100", \
+	"benchmark/cpu_java_50.log" using 1 with linespoints pt 2 pi 10 title "Jmeter-50",\
+	"benchmark/cpu_java_10.log" using 1 with linespoints pt 3 pi 10 title "Jmeter-10",\
+	"benchmark/cpu_chukonu_100.log" using 1 with linespoints pt 4  pi 10 title "chukonu-100",\
+	"benchmark/cpu_chukonu_50.log" using 1 with linespoints pt 5 pi 10 title "chukonu-50",\
+	"benchmark/cpu_chukonu_10.log" using 1 with linespoints pt 6 pi 10 title "chukonu-10",\
