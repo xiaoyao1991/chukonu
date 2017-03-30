@@ -29,7 +29,7 @@ func (m *DruidRequestProvider) Gen() {
 	i := 0
 	for {
 		// <-throttle
-		fmt.Printf("Generating %dth request\n", i)
+		// fmt.Printf("Generating %dth request\n", i)
 		var jsonStr = []byte(`
       {
         "queryType" : "topN",
@@ -56,16 +56,16 @@ func (m *DruidRequestProvider) Gen() {
 		queue <- impl.ChukonuHttpRequest{Request: req}
 		i++
 
-		// if i == 100 {
-		// 	break
-		// }
+		if i == 100 {
+			break
+		}
 	}
 
-	// close(queue)
+	close(queue)
 }
 
 func main() {
-	config := core.ChukonuConfig{Concurrency: 10, RequestTimeout: 5 * time.Minute}
+	config := core.ChukonuConfig{Concurrency: 1, RequestTimeout: 5 * time.Minute}
 	httpengine := impl.NewHttpEngine(config)
 	var pool core.Pool
 

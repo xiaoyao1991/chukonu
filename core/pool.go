@@ -15,7 +15,7 @@ func (p Pool) Start(engine Engine, provider RequestProvider, metricsManager Metr
 
 	queue := provider.Provide()
 	go metricsManager.MeasureThroughput()
-	// go metricsManager.SampleThroughput()
+	go metricsManager.SampleThroughput()
 	//START SENDING REQUEST
 	throughputQueue := metricsManager.GetQueue()
 	startTime := time.Now()
@@ -24,7 +24,7 @@ func (p Pool) Start(engine Engine, provider RequestProvider, metricsManager Metr
 			defer wg.Done()
 			for req := range queue {
 				metricsManager.RecordRequest(req)
-				fmt.Println(fmt.Sprintf("goroutine %d running request...", i))
+				// fmt.Println(fmt.Sprintf("goroutine %d running request...", i))
 				resp, err := engine.RunRequest(req)
 				throughputQueue <- 1
 				if err != nil {
@@ -33,7 +33,7 @@ func (p Pool) Start(engine Engine, provider RequestProvider, metricsManager Metr
 					continue
 				}
 				metricsManager.RecordResponse(resp)
-				fmt.Println("\t" + resp.Status())
+				// fmt.Println("\t" + resp.Status())
 			}
 		}(i)
 	}

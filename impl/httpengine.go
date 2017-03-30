@@ -62,13 +62,13 @@ func NewHttpEngine(config core.ChukonuConfig) *HttpEngine {
 func (e *HttpEngine) RunRequest(request core.ChukonuRequest) (core.ChukonuResponse, error) {
 	start := time.Now()
 	resp, err := e.Do(request.RawRequest().(*http.Request))
-	defer resp.Body.Close()
+
 	duration := time.Since(start)
 
 	if err != nil {
 		return ChukonuHttpResponse{}, err
 	}
-
+	defer resp.Body.Close()
 	chukonuResp := ChukonuHttpResponse{
 		duration: duration,
 		Response: resp,

@@ -46,16 +46,16 @@ func (m *HttpMetricsManager) MeasureThroughput() {
 }
 
 func (m *HttpMetricsManager) SampleThroughput() {
-	preRequestSent := m.requestSent
-	windowRequestSent := 0
+	// preRequestSent := m.requestSent
+	// windowRequestSent := 0
 	startTime := time.Now()
 	tick := time.Tick(1 * time.Second)
 	for {
 		<-tick
-		windowRequestSent = m.requestSent - preRequestSent
-		preRequestSent = m.requestSent
+		// windowRequestSent = m.requestSent - preRequestSent
+		// preRequestSent = m.requestSent
 		elapseTime := time.Since(startTime)
-		fmt.Println("Throughput/sec: ", windowRequestSent)
-		fmt.Println("cumulative: ", float64(m.requestSent)/elapseTime.Seconds())
+		// fmt.Println("Throughput/sec:	", windowRequestSent)
+		fmt.Println("cumulative	", float64(m.requestSent)/elapseTime.Seconds(), "total ", m.requestSent)
 	}
 }
