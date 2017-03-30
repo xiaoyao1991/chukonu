@@ -1,0 +1,16 @@
+{
+  "queryType" : "topN",
+  "dataSource" : "wikipedia",
+  "intervals" : ["2013-08-01/2013-08-03"],
+  "granularity" : "all",
+  "dimension" : "page",
+  "metric" : "edits",
+  "threshold" : 25,
+  "aggregations" : [
+    {
+      "type" : "longSum",
+      "name" : "edits",
+      "fieldName" : "count"
+    }
+  ]
+}
