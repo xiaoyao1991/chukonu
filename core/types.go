@@ -7,13 +7,15 @@ const (
 )
 
 type ChukonuRequest interface {
-	RawRequest() interface{} // Unwrap and get the actual request
+	// RequestType() string
+	// ID() int64
+	RawRequest() interface{}
 	Timeout() time.Duration
-	//TODO
-	//getValidator() func(ChukonuRequest, ChukonuResponse) bool
+	Validator() func(ChukonuRequest, ChukonuResponse) bool
 }
 
 type ChukonuResponse interface {
+	// ID() int64
 	Duration() time.Duration
 	Status() string
 	Size() int64
@@ -21,7 +23,8 @@ type ChukonuResponse interface {
 }
 
 type RequestProvider interface {
-	Provide() chan ChukonuRequest
+	// Provide() chan ChukonuRequest
+	Provide(chan ChukonuRequest)
 }
 
 type ChukonuConfig struct {
@@ -31,15 +34,6 @@ type ChukonuConfig struct {
 	// Cookie????
 	TotalTimeout   time.Duration
 	RequestTimeout time.Duration
-}
-
-type SLA struct {
-	LatencySLA    map[float32]float64 // percentile to SLA
-	ThroughputSLA map[float32]float64 // percentile to SLA
-}
-
-type ResponseValidator interface {
-	Validate(response ChukonuResponse) bool
 }
 
 type RequestThrottler interface {

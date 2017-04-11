@@ -39,23 +39,29 @@ func NewHttpMetricsManager() *HttpMetricsManager {
 }
 
 func (m *HttpMetricsManager) MeasureThroughput() {
-	// startTime := time.Now()
 	for count := range m.countQueue {
 		m.requestSent = m.requestSent + count
 	}
 }
 
 func (m *HttpMetricsManager) SampleThroughput() {
-	// preRequestSent := m.requestSent
-	// windowRequestSent := 0
-	startTime := time.Now()
-	tick := time.Tick(1 * time.Second)
+	batchStartTime := time.Now()
+	deltaStartTime := batchStartTime
+	deltaTick := time.Tick(1 * time.Second)
+	batchTick := time.Tick(10 * time.Second)
+	prevRequestCount := 0
 	for {
-		<-tick
-		// windowRequestSent = m.requestSent - preRequestSent
-		// preRequestSent = m.requestSent
-		elapseTime := time.Since(startTime)
-		// fmt.Println("Throughput/sec:	", windowRequestSent)
-		fmt.Println("cumulative	", float64(m.requestSent)/elapseTime.Seconds(), "total ", m.requestSent)
+		select {
+		case <-deltaTick:
+			elapsed := time.Since(deltaStartTime)
+			deltaRequestCount := m.requestSent - prevRequestCount
+			fmt.Printf("delta: %f, total: %d in %f sec\n", float64(deltaRequestCount)/elapsed.Seconds(), deltaRequestCount, elapsed.Seconds())
+			deltaStartTime = time.Now()
+			prevRequestCount = m.requestSent
+		case <-batchTick:
+			elapsed := time.Since(batchStartTime)
+			fmt.Printf("overall: %f, total: %d in %f sec\n", float64(m.requestSent)/elapsed.Seconds(), m.requestSent, elapsed.Seconds())
+		default:
+		}
 	}
 }
