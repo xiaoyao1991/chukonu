@@ -2,6 +2,8 @@ package impl
 
 import (
 	"net/http"
+	"net/http/cookiejar"
+	"net/http/httputil"
 	"time"
 
 	"github.com/xiaoyao1991/chukonu/core"
@@ -37,6 +39,11 @@ func (c ChukonuHttpRequest) Validator() func(core.ChukonuRequest, core.ChukonuRe
 	return c.validate
 }
 
+// TODO: reconsider the body=true param
+func (c ChukonuHttpRequest) Dump() ([]byte, error) {
+	return httputil.DumpRequestOut(c.Request, true)
+}
+
 func (c ChukonuHttpResponse) RawResponse() interface{} {
 	return c.Response
 }
@@ -53,12 +60,19 @@ func (c ChukonuHttpResponse) Size() int64 {
 	return c.Response.ContentLength
 }
 
+// TODO: reconsider the body=true param
+func (c ChukonuHttpResponse) Dump() ([]byte, error) {
+	return httputil.DumpResponse(c.Response, true)
+}
+
 func NewHttpEngine(config core.ChukonuConfig) *HttpEngine {
+	jar, _ := cookiejar.New(nil)
+
 	return &HttpEngine{
 		config: config,
 		Client: http.Client{
 			Timeout: config.RequestTimeout,
-			// Jar: ,
+			Jar:     jar,
 			// Transport: &http.Transport{},
 		},
 	}
@@ -66,6 +80,7 @@ func NewHttpEngine(config core.ChukonuConfig) *HttpEngine {
 
 // TODO: need to add a param to consume the resp body, if no, then close the body right away
 // likely it's gonna be some io.WriterCloser, or custom parser if users want to use the data in response?
+// TODO: dump response https://golang.org/src/net/http/httputil/dump.go?s=8166:8231#L271
 func (e *HttpEngine) RunRequest(request core.ChukonuRequest) (core.ChukonuResponse, error) {
 	start := time.Now()
 	resp, err := e.Do(request.RawRequest().(*http.Request))
@@ -80,4 +95,13 @@ func (e *HttpEngine) RunRequest(request core.ChukonuRequest) (core.ChukonuRespon
 		Response: resp,
 	}
 	return chukonuResp, nil
+}
+
+func (e *HttpEngine) ResetState() error {
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return err
+	}
+	e.Client.Jar = jar
+	return nil
 }

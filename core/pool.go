@@ -27,6 +27,13 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 				for _, req := range workflow.Requests {
 					metricsManager.RecordRequest(req)
 					// fmt.Printf("goroutine %d running request...", i)
+					// dump, err := req.Dump()
+					// if err != nil {
+					// 	log.Fatal(err)
+					// }
+					//
+					// fmt.Println(string(dump))
+
 					resp, err := engines[i].RunRequest(req)
 					throughputQueue <- 1
 					if err != nil {

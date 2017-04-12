@@ -12,6 +12,7 @@ type ChukonuRequest interface {
 	RawRequest() interface{}
 	Timeout() time.Duration
 	Validator() func(ChukonuRequest, ChukonuResponse) bool
+	Dump() ([]byte, error)
 }
 
 type ChukonuResponse interface {
@@ -20,6 +21,7 @@ type ChukonuResponse interface {
 	Status() string
 	Size() int64
 	RawResponse() interface{}
+	Dump() ([]byte, error)
 }
 
 // A flow of requests that will be run sequentially in order by one goroutine
@@ -48,6 +50,7 @@ type Engine interface {
 	// LoadMetricsManager(metricsManager MetricsManager) error
 	// Run(requestProvider RequestProvider) error
 	RunRequest(request ChukonuRequest) (ChukonuResponse, error)
+	ResetState() error
 }
 
 type MetricsManager interface {
