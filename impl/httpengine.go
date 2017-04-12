@@ -89,7 +89,7 @@ func (e *HttpEngine) RunRequest(request core.ChukonuRequest) (core.ChukonuRespon
 		return ChukonuHttpResponse{}, err
 	}
 
-	defer resp.Body.Close() //???? where to close body
+	defer resp.Body.Close() //TODO: where to close body
 	chukonuResp := ChukonuHttpResponse{
 		duration: duration,
 		Response: resp,
