@@ -1,14 +1,18 @@
 package core
 
-import "time"
+import (
+	"time"
+
+	"github.com/satori/go.uuid"
+)
 
 const (
 	MicrosecondsInOneSecond = 1e6
 )
 
 type ChukonuRequest interface {
-	// RequestType() string
-	// ID() int64
+	ID() uuid.UUID
+	Name() string // name of a type of request
 	RawRequest() interface{}
 	Timeout() time.Duration
 	Validator() func(ChukonuRequest, ChukonuResponse) bool
@@ -16,7 +20,7 @@ type ChukonuRequest interface {
 }
 
 type ChukonuResponse interface {
-	// ID() int64
+	ID() uuid.UUID
 	Duration() time.Duration
 	Status() string
 	Size() int64
@@ -26,6 +30,7 @@ type ChukonuResponse interface {
 
 // A flow of requests that will be run sequentially in order by one goroutine
 type ChukonuWorkflow struct {
+	Name     string // name of a type of workflow
 	Requests []ChukonuRequest
 }
 

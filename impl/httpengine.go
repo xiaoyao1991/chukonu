@@ -6,6 +6,7 @@ import (
 	"net/http/httputil"
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/xiaoyao1991/chukonu/core"
 )
 
@@ -15,6 +16,8 @@ type HttpEngine struct {
 }
 
 type ChukonuHttpRequest struct {
+	name           string
+	id             uuid.UUID
 	timeout        time.Duration
 	followRedirect bool
 	keepAlive      bool
@@ -23,8 +26,17 @@ type ChukonuHttpRequest struct {
 }
 
 type ChukonuHttpResponse struct {
+	id       uuid.UUID
 	duration time.Duration
 	*http.Response
+}
+
+func (c ChukonuHttpRequest) Name() string {
+	return c.name
+}
+
+func (c ChukonuHttpRequest) ID() uuid.UUID {
+	return c.id
 }
 
 func (c ChukonuHttpRequest) Timeout() time.Duration {
@@ -42,6 +54,10 @@ func (c ChukonuHttpRequest) Validator() func(core.ChukonuRequest, core.ChukonuRe
 // TODO: reconsider the body=true param
 func (c ChukonuHttpRequest) Dump() ([]byte, error) {
 	return httputil.DumpRequestOut(c.Request, true)
+}
+
+func (c ChukonuHttpResponse) ID() uuid.UUID {
+	return c.id
 }
 
 func (c ChukonuHttpResponse) RawResponse() interface{} {
