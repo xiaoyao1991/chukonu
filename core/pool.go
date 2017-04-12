@@ -9,32 +9,34 @@ import (
 type Pool struct {
 }
 
-func (p Pool) Start(engine Engine, provider RequestProvider, metricsManager MetricsManager, config ChukonuConfig) {
+func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager MetricsManager, config ChukonuConfig) {
 	var wg sync.WaitGroup
 	wg.Add(config.Concurrency)
 
-	queue := make(chan ChukonuRequest, 10)
+	queue := make(chan ChukonuWorkflow, config.Concurrency)
 	go provider.Provide(queue)
 	go metricsManager.MeasureThroughput() // start a goroutine to listen for atomic changes
 	go metricsManager.SampleThroughput()
-	//START SENDING REQUEST
+
 	throughputQueue := metricsManager.GetQueue()
 	startTime := time.Now()
 	for i := 0; i < config.Concurrency; i++ {
 		go func(i int) {
 			defer wg.Done()
-			for req := range queue {
-				metricsManager.RecordRequest(req)
-				// fmt.Println(fmt.Sprintf("goroutine %d running request...", i))
-				resp, err := engine.RunRequest(req)
-				throughputQueue <- 1
-				if err != nil {
-					fmt.Println(err)
-					metricsManager.RecordError(err)
-					continue
+			for workflow := range queue {
+				for _, req := range workflow.Requests {
+					metricsManager.RecordRequest(req)
+					// fmt.Printf("goroutine %d running request...", i)
+					resp, err := engines[i].RunRequest(req)
+					throughputQueue <- 1
+					if err != nil {
+						fmt.Println(err)
+						metricsManager.RecordError(err)
+						continue
+					}
+					metricsManager.RecordResponse(resp)
+					// fmt.Println("\t" + resp.Status())
 				}
-				metricsManager.RecordResponse(resp)
-				// fmt.Println("\t" + resp.Status())
 			}
 		}(i)
 	}

@@ -22,9 +22,13 @@ type ChukonuResponse interface {
 	RawResponse() interface{}
 }
 
+// A flow of requests that will be run sequentially in order by one goroutine
+type ChukonuWorkflow struct {
+	Requests []ChukonuRequest
+}
+
 type RequestProvider interface {
-	// Provide() chan ChukonuRequest
-	Provide(chan ChukonuRequest)
+	Provide(chan ChukonuWorkflow)
 }
 
 type ChukonuConfig struct {
