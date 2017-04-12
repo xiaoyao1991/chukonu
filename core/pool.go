@@ -13,8 +13,9 @@ func (p Pool) Start(engine Engine, provider RequestProvider, metricsManager Metr
 	var wg sync.WaitGroup
 	wg.Add(config.Concurrency)
 
-	queue := provider.Provide()
-	go metricsManager.MeasureThroughput()
+	queue := make(chan ChukonuRequest, 10)
+	go provider.Provide(queue)
+	go metricsManager.MeasureThroughput() // start a goroutine to listen for atomic changes
 	go metricsManager.SampleThroughput()
 	//START SENDING REQUEST
 	throughputQueue := metricsManager.GetQueue()

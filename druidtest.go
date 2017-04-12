@@ -11,20 +11,9 @@ import (
 )
 
 type DruidRequestProvider struct {
-	queue chan core.ChukonuRequest
 }
 
-func (m *DruidRequestProvider) Provide() chan core.ChukonuRequest {
-	if m.queue == nil {
-		m.queue = make(chan core.ChukonuRequest, 10)
-	}
-
-	return m.queue
-}
-
-func (m *DruidRequestProvider) Gen() {
-	queue := m.Provide()
-
+func (m *DruidRequestProvider) Provide(queue chan core.ChukonuRequest) {
 	// throttle := time.Tick(200 * time.Millisecond)
 	i := 0
 	for {
@@ -56,20 +45,18 @@ func (m *DruidRequestProvider) Gen() {
 		queue <- impl.ChukonuHttpRequest{Request: req}
 		i++
 
-		if i == 100 {
-			break
-		}
+		// if i == 100 {
+		// 	break
+		// }
 	}
 
-	close(queue)
+	// close(queue)
 }
 
 func main() {
-	config := core.ChukonuConfig{Concurrency: 1, RequestTimeout: 5 * time.Minute}
+	config := core.ChukonuConfig{Concurrency: 10, RequestTimeout: 5 * time.Minute}
 	httpengine := impl.NewHttpEngine(config)
 	var pool core.Pool
 
-	provider := &DruidRequestProvider{}
-	go provider.Gen()
-	pool.Start(httpengine, provider, impl.NewHttpMetricsManager(), config)
+	pool.Start(httpengine, &DruidRequestProvider{}, impl.NewHttpMetricsManager(), config)
 }

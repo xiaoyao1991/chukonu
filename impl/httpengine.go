@@ -16,6 +16,7 @@ type ChukonuHttpRequest struct {
 	timeout        time.Duration
 	followRedirect bool
 	keepAlive      bool
+	validate       func(core.ChukonuRequest, core.ChukonuResponse) bool
 	*http.Request
 }
 
@@ -30,6 +31,10 @@ func (c ChukonuHttpRequest) Timeout() time.Duration {
 
 func (c ChukonuHttpRequest) RawRequest() interface{} {
 	return c.Request
+}
+
+func (c ChukonuHttpRequest) Validator() func(core.ChukonuRequest, core.ChukonuResponse) bool {
+	return c.validate
 }
 
 func (c ChukonuHttpResponse) RawResponse() interface{} {
@@ -59,16 +64,17 @@ func NewHttpEngine(config core.ChukonuConfig) *HttpEngine {
 	}
 }
 
+// TODO: need to add a param to consume the resp body, if no, then close the body right away
+// likely it's gonna be some io.WriterCloser, or custom parser if users want to use the data in response?
 func (e *HttpEngine) RunRequest(request core.ChukonuRequest) (core.ChukonuResponse, error) {
 	start := time.Now()
 	resp, err := e.Do(request.RawRequest().(*http.Request))
-
 	duration := time.Since(start)
-
 	if err != nil {
 		return ChukonuHttpResponse{}, err
 	}
-	defer resp.Body.Close()
+
+	defer resp.Body.Close() //???? where to close body
 	chukonuResp := ChukonuHttpResponse{
 		duration: duration,
 		Response: resp,
