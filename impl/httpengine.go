@@ -60,9 +60,9 @@ func (c ChukonuHttpResponse) Size() int64 {
 	return c.Response.ContentLength
 }
 
-// TODO: reconsider the body=true param
+// TODO: reconsider the body=false param, set to false now because body would be closed early somewhere before dump is called
 func (c ChukonuHttpResponse) Dump() ([]byte, error) {
-	return httputil.DumpResponse(c.Response, true)
+	return httputil.DumpResponse(c.Response, false)
 }
 
 func NewHttpEngine(config core.ChukonuConfig) *HttpEngine {
