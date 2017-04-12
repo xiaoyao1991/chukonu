@@ -13,12 +13,20 @@ import (
 type DruidRequestProvider struct {
 }
 
-func (m *DruidRequestProvider) Provide(queue chan core.ChukonuRequest) {
+func (m *DruidRequestProvider) Provide(queue chan core.ChukonuWorkflow) {
 	// throttle := time.Tick(200 * time.Millisecond)
 	i := 0
 	for {
 		// <-throttle
 		// fmt.Printf("Generating %dth request\n", i)
+		var workflow core.ChukonuWorkflow
+
+		req, err := http.NewRequest("GET", "http://sp17-cs525-g13-01.cs.illinois.edu:3000/druid/v2/datasources", nil)
+		if err != nil {
+			fmt.Println(err)
+		}
+		workflow.Requests = append(workflow.Requests, impl.ChukonuHttpRequest{Request: req})
+
 		var jsonStr = []byte(`
       {
         "queryType" : "topN",
@@ -36,13 +44,14 @@ func (m *DruidRequestProvider) Provide(queue chan core.ChukonuRequest) {
           }
         ]
       }`)
-		req, err := http.NewRequest("POST", "http://sp17-cs525-g13-01.cs.illinois.edu:3000/druid/v2/", bytes.NewBuffer(jsonStr))
+		req, err = http.NewRequest("POST", "http://sp17-cs525-g13-01.cs.illinois.edu:3000/druid/v2/", bytes.NewBuffer(jsonStr))
 		req.Header.Set("Content-Type", "application/json")
-
 		if err != nil {
 			fmt.Println(err)
 		}
-		queue <- impl.ChukonuHttpRequest{Request: req}
+		workflow.Requests = append(workflow.Requests, impl.ChukonuHttpRequest{Request: req})
+
+		queue <- workflow
 		i++
 
 		// if i == 100 {
@@ -55,8 +64,11 @@ func (m *DruidRequestProvider) Provide(queue chan core.ChukonuRequest) {
 
 func main() {
 	config := core.ChukonuConfig{Concurrency: 10, RequestTimeout: 5 * time.Minute}
-	httpengine := impl.NewHttpEngine(config)
+	var engines []core.Engine = make([]core.Engine, config.Concurrency)
+	for i := 0; i < config.Concurrency; i++ {
+		engines[i] = impl.NewHttpEngine(config)
+	}
 	var pool core.Pool
 
-	pool.Start(httpengine, &DruidRequestProvider{}, impl.NewHttpMetricsManager(), config)
+	pool.Start(engines, &DruidRequestProvider{}, impl.NewHttpMetricsManager(), config)
 }
