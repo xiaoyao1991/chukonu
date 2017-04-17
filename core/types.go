@@ -3,6 +3,8 @@ package core
 import (
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/satori/go.uuid"
 )
 
@@ -31,7 +33,7 @@ type ChukonuResponse interface {
 // A flow of requests that will be run sequentially in order by one goroutine
 type ChukonuWorkflow struct {
 	Name     string // name of a type of workflow
-	Requests []ChukonuRequest
+	Requests []func(context.Context) ChukonuRequest
 }
 
 type RequestProvider interface {

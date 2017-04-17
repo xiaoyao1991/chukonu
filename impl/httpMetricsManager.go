@@ -44,6 +44,7 @@ func (m *HttpMetricsManager) MeasureThroughput() {
 	}
 }
 
+// TODO: debounce instead of fixed ticking, because some metrics collection may take longer than 1 sec
 func (m *HttpMetricsManager) SampleThroughput() {
 	batchStartTime := time.Now()
 	deltaStartTime := batchStartTime
