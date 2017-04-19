@@ -29,32 +29,17 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 					// metricsManager.RecordRequest(req)
 
 					// fmt.Printf("goroutine %d running request...", i)
-
-					// dump, err := req.Dump()
-					// if err != nil {
-					// 	log.Fatal(err)
-					// }
-					// fmt.Println(string(dump))
 					resp, err := engines[i].RunRequest(req)
-					// dump, err := resp.Dump()
-					// if err != nil {
-					// 	log.Fatal(err)
-					// }
-					// fmt.Println(string(dump))
-					if err != nil {
-						// TODO: record errors, differentiate custom errors
-					} else { //TODO: what to do on error
-						workflow.PostProcess(req, resp)
-					}
-
 					throughputQueue <- 1
 					if err != nil {
+						// TODO: differentiate custom errors
 						fmt.Println(err)
 						metricsManager.RecordError(err)
 						continue
+					} else { //TODO: what to do on error
+						workflow.PostProcess(req, resp)
 					}
 					metricsManager.RecordResponse(resp)
-					// fmt.Println("\t" + resp.Status())
 				}
 
 				engines[i].ResetState()
@@ -66,5 +51,4 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 	metricsManager.RecordThroughput(elapseTime.Seconds())
 	close(throughputQueue)
 	// metricsManager.RecordThroughput(float64(requestSent) / elapseTime.Seconds())
-
 }

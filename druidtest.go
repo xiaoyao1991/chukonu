@@ -32,6 +32,11 @@ func (m *DruidRequestProvider) Provide(queue chan *core.ChukonuWorkflow) {
 			}
 			return impl.NewChukonuHttpRequest("datasources_req", 0, true, true, func(ctx context.Context, resp core.ChukonuResponse) context.Context {
 				defer resp.RawResponse().(*http.Response).Body.Close()
+				// dump, err := resp.Dump()
+				// if err != nil {
+				// 	log.Fatal(err)
+				// }
+				// fmt.Println(string(dump))
 				bodyBytes, _ := ioutil.ReadAll(resp.RawResponse().(*http.Response).Body)
 				bodyString := string(bodyBytes)
 				datasource := bodyString[2 : len(bodyString)-2]
@@ -67,6 +72,11 @@ func (m *DruidRequestProvider) Provide(queue chan *core.ChukonuWorkflow) {
 			}
 			return impl.NewChukonuHttpRequest("topN", 0, true, true, func(ctx context.Context, resp core.ChukonuResponse) context.Context {
 				defer resp.RawResponse().(*http.Response).Body.Close()
+				// dump, err := resp.Dump()
+				// if err != nil {
+				// 	log.Fatal(err)
+				// }
+				// fmt.Println(string(dump))
 				return ctx
 			}, nil, req)
 		}
