@@ -82,13 +82,7 @@ type ChukonuConfig struct {
 	RequestTimeout time.Duration
 }
 
-type RequestThrottler interface {
-	Throttle() chan time.Time
-}
-
 type Engine interface {
-	// LoadMetricsManager(metricsManager MetricsManager) error
-	// Run(requestProvider RequestProvider) error
 	RunRequest(request ChukonuRequest) (ChukonuResponse, error)
 	ResetState() error
 }

@@ -120,9 +120,6 @@ func NewHttpEngine(config core.ChukonuConfig) *HttpEngine {
 	}
 }
 
-// TODO: need to add a param to consume the resp body, if no, then close the body right away
-// likely it's gonna be some io.WriterCloser, or custom parser if users want to use the data in response?
-// TODO: dump response https://golang.org/src/net/http/httputil/dump.go?s=8166:8231#L271
 func (e *HttpEngine) RunRequest(request core.ChukonuRequest) (core.ChukonuResponse, error) {
 	start := time.Now()
 	resp, err := e.Do(request.RawRequest().(*http.Request))
@@ -137,9 +134,6 @@ func (e *HttpEngine) RunRequest(request core.ChukonuRequest) (core.ChukonuRespon
 		Response: resp,
 	}
 
-	// if request.PostProcessor() != nil {
-	// 	request.PostProcessor()(ctx, chukonuResp)
-	// }
 	return chukonuResp, nil
 }
 

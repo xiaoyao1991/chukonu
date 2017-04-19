@@ -56,6 +56,8 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 					metricsManager.RecordResponse(resp)
 					// fmt.Println("\t" + resp.Status())
 				}
+
+				engines[i].ResetState()
 			}
 		}(i)
 	}
