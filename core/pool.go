@@ -13,7 +13,7 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 	var wg sync.WaitGroup
 	wg.Add(config.Concurrency)
 
-	queue := make(chan ChukonuWorkflow, config.Concurrency)
+	queue := make(chan *ChukonuWorkflow, config.Concurrency)
 	go provider.Provide(queue)
 	go metricsManager.MeasureThroughput() // start a goroutine to listen for atomic changes
 	go metricsManager.SampleThroughput()
@@ -24,8 +24,10 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 		go func(i int) {
 			defer wg.Done()
 			for workflow := range queue {
-				for _, req := range workflow.Requests {
-					metricsManager.RecordRequest(req)
+				for workflow.HasNext() {
+					req := workflow.Next()
+					// metricsManager.RecordRequest(req)
+
 					// fmt.Printf("goroutine %d running request...", i)
 
 					// dump, err := req.Dump()
@@ -39,6 +41,11 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 					// 	log.Fatal(err)
 					// }
 					// fmt.Println(string(dump))
+					if err != nil {
+						// TODO: record errors, differentiate custom errors
+					} else { //TODO: what to do on error
+						workflow.PostProcess(req, resp)
+					}
 
 					throughputQueue <- 1
 					if err != nil {
