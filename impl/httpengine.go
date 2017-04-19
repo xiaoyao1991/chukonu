@@ -6,6 +6,8 @@ import (
 	"net/http/httputil"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/satori/go.uuid"
 	"github.com/xiaoyao1991/chukonu/core"
 )
@@ -16,11 +18,12 @@ type HttpEngine struct {
 }
 
 type ChukonuHttpRequest struct {
-	name           string
 	id             uuid.UUID
+	name           string
 	timeout        time.Duration
 	followRedirect bool
 	keepAlive      bool
+	postProcess    func(context.Context, core.ChukonuResponse) context.Context
 	validate       func(core.ChukonuRequest, core.ChukonuResponse) bool
 	*http.Request
 }
@@ -29,6 +32,25 @@ type ChukonuHttpResponse struct {
 	id       uuid.UUID
 	duration time.Duration
 	*http.Response
+}
+
+func NewChukonuHttpRequest(name string,
+	timeout time.Duration,
+	followRedirect bool,
+	keepAlive bool,
+	postProcess func(context.Context, core.ChukonuResponse) context.Context,
+	validate func(core.ChukonuRequest, core.ChukonuResponse) bool,
+	req *http.Request) ChukonuHttpRequest {
+	return ChukonuHttpRequest{
+		id:             uuid.NewV4(),
+		name:           name,
+		timeout:        timeout,
+		followRedirect: followRedirect,
+		keepAlive:      keepAlive,
+		postProcess:    postProcess,
+		validate:       validate,
+		Request:        req,
+	}
 }
 
 func (c ChukonuHttpRequest) Name() string {
@@ -49,6 +71,10 @@ func (c ChukonuHttpRequest) RawRequest() interface{} {
 
 func (c ChukonuHttpRequest) Validator() func(core.ChukonuRequest, core.ChukonuResponse) bool {
 	return c.validate
+}
+
+func (c ChukonuHttpRequest) PostProcessor() func(context.Context, core.ChukonuResponse) context.Context {
+	return c.postProcess
 }
 
 // TODO: reconsider the body=true param
@@ -94,9 +120,6 @@ func NewHttpEngine(config core.ChukonuConfig) *HttpEngine {
 	}
 }
 
-// TODO: need to add a param to consume the resp body, if no, then close the body right away
-// likely it's gonna be some io.WriterCloser, or custom parser if users want to use the data in response?
-// TODO: dump response https://golang.org/src/net/http/httputil/dump.go?s=8166:8231#L271
 func (e *HttpEngine) RunRequest(request core.ChukonuRequest) (core.ChukonuResponse, error) {
 	start := time.Now()
 	resp, err := e.Do(request.RawRequest().(*http.Request))
@@ -105,11 +128,12 @@ func (e *HttpEngine) RunRequest(request core.ChukonuRequest) (core.ChukonuRespon
 		return ChukonuHttpResponse{}, err
 	}
 
-	defer resp.Body.Close() //TODO: where to close body
+	// defer resp.Body.Close() //TODO: delegate close responsibility to users?
 	chukonuResp := ChukonuHttpResponse{
 		duration: duration,
 		Response: resp,
 	}
+
 	return chukonuResp, nil
 }
 
