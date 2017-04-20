@@ -107,7 +107,7 @@ func (c ChukonuHttpResponse) Dump() ([]byte, error) {
 	return httputil.DumpResponse(c.Response, false)
 }
 
-func NewHttpEngine(config core.ChukonuConfig) *HttpEngine {
+func NewHttpEngine(config core.ChukonuConfig) core.Engine {
 	jar, _ := cookiejar.New(nil)
 
 	return &HttpEngine{
