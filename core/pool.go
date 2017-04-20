@@ -20,7 +20,8 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 
 	throughputQueue := metricsManager.GetQueue()
 	startTime := time.Now()
-	for i := 0; i < config.Concurrency; i++ {
+	var i int
+	for i = 0; i < config.Concurrency; i++ {
 		<-fuse
 
 		go func(i int) {

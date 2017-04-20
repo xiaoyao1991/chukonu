@@ -11,7 +11,13 @@ import (
 	"github.com/google/cadvisor/info/v1"
 	"github.com/hashicorp/consul/api"
 	"github.com/xiaoyao1991/chukonu/core"
+
+	"net/http"
+	_ "net/http/pprof"
 )
+
+const CriticalMemThreshold = 0.8
+const CriticalCpuThreshold = 0.95
 
 type LifeCycle struct {
 	cid      string
@@ -30,7 +36,6 @@ func NewLifeCycle(cadvisorBaseUrl string) LifeCycle {
 		panic(err)
 	}
 
-	// get container id: cat /proc/self/cgroup | grep "cpu:/" | sed 's/\([0-9]\):cpu:\/docker\///g'
 	cmd := "cat /proc/self/cgroup | grep 'cpu:/' | sed 's/\\([0-9]\\):cpu:\\/docker\\///g'"
 	out, err := exec.Command("bash", "-c", cmd).Output()
 	if err != nil {
@@ -70,7 +75,7 @@ func (d LifeCycle) Run(testplanName string) {
 	sym, _ := p.Lookup("TestPlan")
 	requestProvider := sym.(core.RequestProvider)
 
-	config := core.ChukonuConfig{Concurrency: 10, RequestTimeout: 5 * time.Minute}
+	config := core.ChukonuConfig{Concurrency: 1000, RequestTimeout: 5 * time.Minute}
 	var engines []core.Engine = make([]core.Engine, config.Concurrency)
 	for i := 0; i < config.Concurrency; i++ {
 		engines[i] = requestProvider.UseEngine()(config)
@@ -82,17 +87,43 @@ func (d LifeCycle) Run(testplanName string) {
 	fuse <- true
 	go func(fuse chan bool, ack chan bool) {
 		for b := range ack {
-			fmt.Println(b)
-			request := v1.ContainerInfoRequest{NumStats: 1}
+			if !b {
+				return
+			}
+			request := v1.ContainerInfoRequest{NumStats: 2}
 			sInfo, err := d.cadvisor.ContainerInfo(fmt.Sprintf("/docker/%s", d.cid), &request)
 			if err != nil {
 				fmt.Println(err)
+				// TODO:
 			}
-			fmt.Println(sInfo)
-			fuse <- true
+
+			if len(sInfo.Stats) != 2 {
+				fuse <- true
+			} else {
+				// cpu limit
+				cpuLimit := float64(sInfo.Spec.Cpu.Quota) / float64(sInfo.Spec.Cpu.Period)
+				memoryLimit := float64(sInfo.Spec.Memory.Limit)
+
+				currStat := sInfo.Stats[1]
+				prevStat := sInfo.Stats[0]
+
+				// Cpu
+				intervalNs := currStat.Timestamp.UnixNano() - prevStat.Timestamp.UnixNano()
+				deltaCpuTotalUsage := currStat.Cpu.Usage.Total - prevStat.Cpu.Usage.Total
+				cpuUsagePercent := float64(deltaCpuTotalUsage) / float64(intervalNs) / cpuLimit
+
+				// memory
+				memUsagePercent := float64(currStat.Memory.Usage) / memoryLimit
+
+				fmt.Printf("\tCPU Usage: %f\n\tMem Usage: %f\n", cpuUsagePercent, memUsagePercent)
+				// if cpuUsagePercent <= CriticalCpuThreshold && memUsagePercent <= CriticalMemThreshold {
+				fuse <- true
+				// }
+			}
 		}
 		close(fuse)
 	}(fuse, ack)
+
 	pool.Start(engines, requestProvider, requestProvider.MetricsManager(), config, fuse, ack)
 }
 
