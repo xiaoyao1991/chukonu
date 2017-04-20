@@ -91,11 +91,12 @@ func (d LifeCycle) Run(testplanName string) {
 			fmt.Println(sInfo)
 			fuse <- true
 		}
+		close(fuse)
 	}(fuse, ack)
 	pool.Start(engines, requestProvider, requestProvider.MetricsManager(), config, fuse, ack)
 }
 
-var cadvisorBaseUrl = flag.String("cadvisor", "", "base url for cadvisor")
+var cadvisorBaseUrl = flag.String("cadvisor", "http://localhost:8080/", "base url for cadvisor")
 
 func init() {
 	flag.Parse()
