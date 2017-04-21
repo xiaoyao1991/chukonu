@@ -116,9 +116,11 @@ func (d LifeCycle) Run(testplanName string) {
 				memUsagePercent := float64(currStat.Memory.Usage) / memoryLimit
 
 				fmt.Printf("\tCPU Usage: %f\n\tMem Usage: %f\n", cpuUsagePercent, memUsagePercent)
-				// if cpuUsagePercent <= CriticalCpuThreshold && memUsagePercent <= CriticalMemThreshold {
-				fuse <- true
-				// }
+				if cpuUsagePercent <= CriticalCpuThreshold && memUsagePercent <= CriticalMemThreshold {
+					fuse <- true
+				} else {
+					break
+				}
 			}
 		}
 		close(fuse)

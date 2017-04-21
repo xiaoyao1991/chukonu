@@ -22,7 +22,10 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 	startTime := time.Now()
 	var i int
 	for i = 0; i < config.Concurrency; i++ {
-		<-fuse
+		_, ok := <-fuse
+		if !ok {
+			break
+		}
 
 		go func(i int) {
 			defer wg.Done()
@@ -52,6 +55,11 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 		ack <- true
 	}
 	close(ack)
+
+	// TODO: handle when i != concurrency
+	if i < config.Concurrency {
+		fmt.Println("Not able to spawn all users, spawned: ", i)
+	}
 
 	wg.Wait()
 	elapseTime := time.Since(startTime)
