@@ -32,7 +32,7 @@ func NewLifeCycle(cadvisorBaseUrl string, consulAddress string) LifeCycle {
 	// Get a new client
 	consul, err := api.NewClient(&api.Config{Address: consulAddress})
 	if err != nil {
-		//panic(err)
+		panic(err)
 	}
 	cadvisor, err := client.NewClient(cadvisorBaseUrl)
 	if err != nil {
