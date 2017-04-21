@@ -134,6 +134,10 @@ func init() {
 }
 
 func main() {
+	// TODO: remove when production
+	go func() {
+		http.ListenAndServe("localhost:6060", nil)
+	}()
 	l := NewLifeCycle(*cadvisorBaseUrl)
 	l.Run("druidtestplan.so")
 }
