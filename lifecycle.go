@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"os/exec"
 	"plugin"
+	"strings"
 	"time"
 
 	"github.com/google/cadvisor/client"
@@ -20,14 +22,15 @@ const CriticalMemThreshold = 0.8
 const CriticalCpuThreshold = 0.95
 
 type LifeCycle struct {
+	// tenantId string
 	cid      string
 	consul   *api.Client
 	cadvisor *client.Client
 }
 
-func NewLifeCycle(cadvisorBaseUrl string) LifeCycle {
+func NewLifeCycle(cadvisorBaseUrl string, consulAddress string) LifeCycle {
 	// Get a new client
-	consul, err := api.NewClient(api.DefaultConfig())
+	consul, err := api.NewClient(&api.Config{Address: consulAddress})
 	if err != nil {
 		//panic(err)
 	}
@@ -41,7 +44,7 @@ func NewLifeCycle(cadvisorBaseUrl string) LifeCycle {
 	if err != nil {
 		panic(err)
 	}
-	cid := string(out)
+	cid := strings.TrimSpace(string(out))
 
 	return LifeCycle{
 		cid:      cid,
@@ -59,7 +62,7 @@ func (d LifeCycle) Register() error {
 		Port:              7426,
 		Address:           d.cid,
 		EnableTagOverride: false,
-		Check:             &api.AgentServiceCheck{DockerContainerID: d.cid},
+		Check:             &api.AgentServiceCheck{DockerContainerID: d.cid}, //TODO: this doesnt work now
 		Checks:            nil,
 	}
 	err := agent.ServiceRegister(service)
@@ -86,10 +89,12 @@ func (d LifeCycle) Run(testplanName string) {
 	ack := make(chan bool, 1)
 	fuse <- true
 	go func(fuse chan bool, ack chan bool) {
+		var workerCount uint32 = 0
 		for b := range ack {
 			if !b {
 				return
 			}
+			workerCount++
 			request := v1.ContainerInfoRequest{NumStats: 2}
 			sInfo, err := d.cadvisor.ContainerInfo(fmt.Sprintf("/docker/%s", d.cid), &request)
 			if err != nil {
@@ -116,7 +121,7 @@ func (d LifeCycle) Run(testplanName string) {
 				memUsagePercent := float64(currStat.Memory.Usage) / memoryLimit
 
 				fmt.Printf("\tCPU Usage: %f\n\tMem Usage: %f\n", cpuUsagePercent, memUsagePercent)
-				if cpuUsagePercent <= CriticalCpuThreshold && memUsagePercent <= CriticalMemThreshold {
+				if memUsagePercent <= CriticalMemThreshold { //TODO: what to do with CPU?
 					fuse <- true
 				} else {
 					break
@@ -124,12 +129,36 @@ func (d LifeCycle) Run(testplanName string) {
 			}
 		}
 		close(fuse)
+
+		// save workerCount to consul
+		kv := d.consul.KV()
+		workerCountB := make([]byte, 4)
+		binary.LittleEndian.PutUint32(workerCountB, workerCount)
+		kvpair := &api.KVPair{
+			Key:   fmt.Sprintf("%s/workercount", d.cid),
+			Value: workerCountB,
+		}
+		_, err := kv.Put(kvpair, nil)
+		if err != nil {
+			// TODO:
+			fmt.Println(err)
+		}
+
 	}(fuse, ack)
 
 	pool.Start(engines, requestProvider, requestProvider.MetricsManager(), config, fuse, ack)
 }
 
+func (d LifeCycle) done() {
+	agent := d.consul.Agent()
+	err := agent.ServiceDeregister(d.cid)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
 var cadvisorBaseUrl = flag.String("cadvisor", "http://localhost:8080/", "base url for cadvisor")
+var consulAddress = flag.String("consul", "http://localhost:8500/", "consul address")
 
 func init() {
 	flag.Parse()
@@ -140,6 +169,7 @@ func main() {
 	go func() {
 		http.ListenAndServe("localhost:6060", nil)
 	}()
-	l := NewLifeCycle(*cadvisorBaseUrl)
+	l := NewLifeCycle(*cadvisorBaseUrl, *consulAddress)
+	l.Register()
 	l.Run("druidtestplan.so")
 }
