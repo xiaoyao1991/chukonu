@@ -9,7 +9,7 @@ import (
 type Pool struct {
 }
 
-func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager MetricsManager, config ChukonuConfig) {
+func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager MetricsManager, config ChukonuConfig, fuse chan bool, ack chan bool) {
 	var wg sync.WaitGroup
 	wg.Add(config.Concurrency)
 
@@ -20,7 +20,13 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 
 	throughputQueue := metricsManager.GetQueue()
 	startTime := time.Now()
-	for i := 0; i < config.Concurrency; i++ {
+	var i int
+	for i = 0; i < config.Concurrency; i++ {
+		_, ok := <-fuse
+		if !ok {
+			break
+		}
+
 		go func(i int) {
 			defer wg.Done()
 			for workflow := range queue {
@@ -45,7 +51,16 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 				engines[i].ResetState()
 			}
 		}(i)
+
+		ack <- true
 	}
+	close(ack)
+
+	// TODO: handle when i != concurrency
+	if i < config.Concurrency {
+		fmt.Println("Not able to spawn all users, spawned: ", i)
+	}
+
 	wg.Wait()
 	elapseTime := time.Since(startTime)
 	metricsManager.RecordThroughput(elapseTime.Seconds())

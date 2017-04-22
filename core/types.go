@@ -71,15 +71,16 @@ func (c *ChukonuWorkflow) PostProcess(req ChukonuRequest, res ChukonuResponse) {
 
 type RequestProvider interface {
 	Provide(chan *ChukonuWorkflow)
+	UseEngine() func(ChukonuConfig) Engine
+	MetricsManager() MetricsManager
 }
 
 type ChukonuConfig struct {
-	Concurrency int
-	WarmUp      time.Duration
-	Iterations  int
-	// Cookie????
+	Concurrency    int
+	Iterations     int
 	TotalTimeout   time.Duration
 	RequestTimeout time.Duration
+	// cookie?
 }
 
 type Engine interface {
