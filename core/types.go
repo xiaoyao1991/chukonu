@@ -75,12 +75,14 @@ type RequestProvider interface {
 	MetricsManager() MetricsManager
 }
 
+// should be able to represent as json
 type ChukonuConfig struct {
-	Concurrency    int
-	Iterations     int
-	TotalTimeout   time.Duration
-	RequestTimeout time.Duration
-	// cookie?
+	TenantId       string                 `json:"tenantId"`
+	Concurrency    int                    `json:"concurrency"`
+	Iterations     int                    `json:"iterations"`
+	TotalTimeout   time.Duration          `json:"totalTimeout"`
+	RequestTimeout time.Duration          `json:"requestTimeout"`
+	EngineSpec     map[string]interface{} `json:"engineSpec"`
 }
 
 type Engine interface {
