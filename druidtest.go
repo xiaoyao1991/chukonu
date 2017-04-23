@@ -16,6 +16,13 @@ import (
 type DruidRequestProvider struct {
 }
 
+func (m *DruidRequestProvider) MetricsManager() core.MetricsManager {
+	return impl.NewHttpMetricsManager()
+}
+
+func (m *DruidRequestProvider) UseEngine() func(core.ChukonuConfig) core.Engine {
+	return impl.NewHttpEngine
+}
 func (m *DruidRequestProvider) Provide(queue chan *core.ChukonuWorkflow) {
 	// throttle := time.Tick(200 * time.Millisecond)
 	i := 0
@@ -83,12 +90,13 @@ func (m *DruidRequestProvider) Provide(queue chan *core.ChukonuWorkflow) {
 
 		workflow.AddRequest(fn2)
 
+		// fmt.Print("adding workflow to queue")
 		queue <- workflow
 		i++
 
-		// if i == 100 {
-		// 	break
-		// }
+		if i == 50 {
+			break
+		}
 	}
 
 	// close(queue)
@@ -101,6 +109,7 @@ func main() {
 		engines[i] = impl.NewHttpEngine(config)
 	}
 	var pool core.Pool
-
-	pool.Start(engines, &DruidRequestProvider{}, impl.NewHttpMetricsManager(), config)
+	fuse := make(chan bool, 1)
+	ack := make(chan bool, 1)
+	pool.Start(engines, &DruidRequestProvider{}, impl.NewHttpMetricsManager(), config, fuse, ack)
 }

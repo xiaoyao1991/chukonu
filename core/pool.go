@@ -16,17 +16,17 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 	queue := make(chan *ChukonuWorkflow, config.Concurrency)
 	go provider.Provide(queue)
 	go metricsManager.MeasureThroughput() // start a goroutine to listen for atomic changes
-	go metricsManager.SampleThroughput()
+	go metricsManager.SampleMetrics()
 
 	throughputQueue := metricsManager.GetQueue()
 	startTime := time.Now()
 	var i int
+	// fmt.Printf("concurrency: %d\n", config.Concurrency)
 	for i = 0; i < config.Concurrency; i++ {
-		_, ok := <-fuse
-		if !ok {
-			break
-		}
-
+		// _, ok := <-fuse
+		// if !ok {
+		// 	break
+		// }
 		go func(i int) {
 			defer wg.Done()
 			for workflow := range queue {
