@@ -29,7 +29,6 @@ type Daemon struct {
 }
 
 func NewDaemon(cadvisorBaseUrl string, consulAddr string) Daemon {
-	// Get a new client
 	consul, err := api.NewClient(&api.Config{Address: consulAddr})
 	if err != nil {
 		panic(err)
@@ -105,8 +104,8 @@ func (d Daemon) SpawnNewContainer(tenantId string) string {
 	}, &container.HostConfig{
 		Resources: container.Resources{
 			// TODO: how do we decide what limit? should we smart calculate?
-			Memory:     int64(128 * BytesInMB),
-			MemorySwap: int64(192 * BytesInMB),
+			Memory:     int64(16 * BytesInMB),
+			MemorySwap: int64(20 * BytesInMB),
 			CPUQuota:   int64(50000),
 			CPUPeriod:  int64(100000),
 		},

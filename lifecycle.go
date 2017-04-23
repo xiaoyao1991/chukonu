@@ -29,7 +29,6 @@ type LifeCycle struct {
 }
 
 func NewLifeCycle(tenantId string, cadvisorBaseUrl string, consulAddress string) LifeCycle {
-	// Get a new client
 	consul, err := api.NewClient(&api.Config{Address: consulAddress})
 	if err != nil {
 		panic(err)
