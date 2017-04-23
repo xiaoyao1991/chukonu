@@ -66,7 +66,7 @@ func (d Daemon) SetupTestPlan(config core.ChukonuConfig) error {
 	binary.LittleEndian.PutUint64(totalTimeoutB, uint64(config.TotalTimeout.Nanoseconds()))
 
 	kvpair := &api.KVPair{
-		Key:   fmt.Sprintf("%s/%s/config/concurrency", config.TenantId, d.hostname),
+		Key:   fmt.Sprintf("%s/config/concurrency", config.TenantId),
 		Value: concurrencyB,
 	}
 	_, err := kv.Put(kvpair, nil)
@@ -75,7 +75,7 @@ func (d Daemon) SetupTestPlan(config core.ChukonuConfig) error {
 	}
 
 	kvpair = &api.KVPair{
-		Key:   fmt.Sprintf("%s/%s/config/iterations", config.TenantId, d.hostname),
+		Key:   fmt.Sprintf("%s/config/iterations", config.TenantId),
 		Value: iterationsB,
 	}
 	_, err = kv.Put(kvpair, nil)
@@ -84,7 +84,7 @@ func (d Daemon) SetupTestPlan(config core.ChukonuConfig) error {
 	}
 
 	kvpair = &api.KVPair{
-		Key:   fmt.Sprintf("%s/%s/config/timeout", config.TenantId, d.hostname),
+		Key:   fmt.Sprintf("%s/config/timeout", config.TenantId),
 		Value: totalTimeoutB,
 	}
 	_, err = kv.Put(kvpair, nil)
@@ -97,6 +97,8 @@ func (d Daemon) SetupTestPlan(config core.ChukonuConfig) error {
 
 func (d Daemon) SpawnNewContainer(tenantId string) string {
 	ctx := context.Background()
+
+	// TODO: lock consul KV table
 
 	resp, err := d.docker.ContainerCreate(ctx, &container.Config{
 		Image: ChukonuImage,
@@ -118,8 +120,46 @@ func (d Daemon) SpawnNewContainer(tenantId string) string {
 		panic(err)
 	}
 
+	// TODO: unlock consul KV table? or should we unlock it in lifecycle
+
 	return resp.ID
 }
+
+func (d Daemon) ShouldSpawnNewContainer(tenantId string) bool {
+	kv := d.consul.KV()
+
+	kvs, _, err := kv.List(fmt.Sprintf("%s/workercount", tenantId), nil)
+	if err != nil {
+		panic(err)
+	}
+
+	var totalWorkerCount uint64
+	for _, kvp := range kvs {
+		totalWorkerCount += binary.LittleEndian.Uint64(kvp.Value)
+	}
+
+	result, _, err := kv.Get(fmt.Sprintf("%s/config/concurrency", tenantId), nil)
+	if err != nil {
+		panic(err)
+	}
+	concurrency := binary.LittleEndian.Uint64(result.Value)
+
+	// TODO: take node resource into consideration
+	return totalWorkerCount < concurrency
+}
+
+// TODO: aggregate metrics
+func (d Daemon) ReportMetrics() {
+
+}
+
+// TODO: spawn new node when the residing node is out of resource
+// func (d Daemon) SpawnNewNode() {
+//
+// }
+// func (d Daemon) ShouldSpawnNewNode() bool {
+// 	return false
+// }
 
 func main() {
 

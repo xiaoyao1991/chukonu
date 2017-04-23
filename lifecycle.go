@@ -89,7 +89,7 @@ func (d LifeCycle) Run(testplanName string) {
 	ack := make(chan bool, 1)
 	fuse <- true
 	go func(fuse chan bool, ack chan bool) {
-		var workerCount uint32 = 0
+		var workerCount uint64 = 0
 		for b := range ack {
 			if !b {
 				return
@@ -132,10 +132,10 @@ func (d LifeCycle) Run(testplanName string) {
 
 		// save workerCount to consul
 		kv := d.consul.KV()
-		workerCountB := make([]byte, 4)
-		binary.LittleEndian.PutUint32(workerCountB, workerCount)
+		workerCountB := make([]byte, 8)
+		binary.LittleEndian.PutUint64(workerCountB, workerCount)
 		kvpair := &api.KVPair{
-			Key:   fmt.Sprintf("%s/%s/workercount", d.tenantId, d.cid),
+			Key:   fmt.Sprintf("%s/workercount/%s", d.tenantId, d.cid),
 			Value: workerCountB,
 		}
 		_, err := kv.Put(kvpair, nil)
