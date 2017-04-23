@@ -1,7 +1,0 @@
-Creating summariser <summary>
-Created the tree successfully using druid.jmx
-Starting the test @ Wed Mar 29 23:49:10 CDT 2017 (1490849350846)
-Waiting for possible shutdown message on port 4445
-summary =    100 in    15s =    6.7/s Avg:   932 Min:   226 Max: 10448 Err:     0 (0.00%)
-Tidying up ...    @ Wed Mar 29 23:49:25 CDT 2017 (1490849365747)
-... end of run
