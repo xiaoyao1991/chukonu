@@ -78,6 +78,7 @@ func (d LifeCycle) Run(testplanName string) {
 	sym, _ := p.Lookup("TestPlan")
 	requestProvider := sym.(core.RequestProvider)
 
+	// TODO: get config from consul
 	config := core.ChukonuConfig{Concurrency: 1000, RequestTimeout: 5 * time.Minute}
 	var engines []core.Engine = make([]core.Engine, config.Concurrency)
 	for i := 0; i < config.Concurrency; i++ {

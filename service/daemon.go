@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/binary"
+	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -18,6 +20,7 @@ const ChukonuImage = "chukonu"
 const BytesInKB = 1024
 const BytesInMB = 1024 * 1024
 const BytesInGB = 1024 * 1024 * 1024
+const numAcceptors = 100
 
 type Daemon struct {
 	hostname        string
@@ -161,6 +164,21 @@ func (d Daemon) ReportMetrics() {
 // 	return false
 // }
 
-func main() {
+var cadvisorBaseUrl = flag.String("cadvisor", "http://localhost:8080/", "base url for cadvisor")
+var consulAddress = flag.String("consul", "http://localhost:8500/", "consul address")
 
+func init() {
+	flag.Parse()
+}
+func main() {
+	//TODO: tmp
+	daemon := NewDaemon(*cadvisorBaseUrl, *consulAddress)
+	daemon.SetupTestPlan(core.ChukonuConfig{TenantId: "druidtest", Concurrency: 1000, RequestTimeout: 5 * time.Minute})
+	tick := time.Tick(5 * time.Second)
+	for {
+		<-tick
+		if daemon.ShouldSpawnNewContainer("druidtest") {
+			daemon.SpawnNewContainer("druidtest")
+		}
+	}
 }
