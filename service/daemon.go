@@ -178,7 +178,10 @@ func main() {
 	for {
 		<-tick
 		if daemon.ShouldSpawnNewContainer("druidtest") {
+			fmt.Println("Spawning new container...")
 			daemon.SpawnNewContainer("druidtest")
+		} else {
+			fmt.Println("Goal reached. No more containers will be spawned")
 		}
 	}
 }
