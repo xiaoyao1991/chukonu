@@ -23,10 +23,12 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 	var i int
 	// fmt.Printf("concurrency: %d\n", config.Concurrency)
 	for i = 0; i < config.Concurrency; i++ {
-		// _, ok := <-fuse
-		// if !ok {
-		// 	break
-		// }
+		if fuse != nil {
+			_, ok := <-fuse
+			if !ok {
+				break
+			}
+		}
 		go func(i int) {
 			defer wg.Done()
 			for workflow := range queue {

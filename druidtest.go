@@ -109,7 +109,5 @@ func main() {
 		engines[i] = impl.NewHttpEngine(config)
 	}
 	var pool core.Pool
-	fuse := make(chan bool, 1)
-	ack := make(chan bool, 1)
-	pool.Start(engines, &DruidRequestProvider{}, impl.NewHttpMetricsManager(), config, fuse, ack)
+	pool.Start(engines, &DruidRequestProvider{}, impl.NewHttpMetricsManager(), config, nil, nil)
 }
