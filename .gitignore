@@ -23,4 +23,7 @@ _testmain.go
 *.test
 *.prof
 
-.idea
+*.idea
+*.png
+*.log
+*.script

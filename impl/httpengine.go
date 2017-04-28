@@ -130,6 +130,7 @@ func (e *HttpEngine) RunRequest(request core.ChukonuRequest) (core.ChukonuRespon
 
 	// defer resp.Body.Close() //TODO: delegate close responsibility to users?
 	chukonuResp := ChukonuHttpResponse{
+		id:       request.ID(),
 		duration: duration,
 		Response: resp,
 	}
