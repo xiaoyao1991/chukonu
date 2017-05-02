@@ -27,3 +27,7 @@ _testmain.go
 *.png
 *.log
 *.script
+.idea
+.vagrant
+.python-version
+log

@@ -22,14 +22,13 @@ const CriticalMemThreshold = 0.8
 const CriticalCpuThreshold = 0.95
 
 type LifeCycle struct {
-	// tenantId string
+	tenantId string
 	cid      string
 	consul   *api.Client
 	cadvisor *client.Client
 }
 
-func NewLifeCycle(cadvisorBaseUrl string, consulAddress string) LifeCycle {
-	// Get a new client
+func NewLifeCycle(tenantId string, cadvisorBaseUrl string, consulAddress string) LifeCycle {
 	consul, err := api.NewClient(&api.Config{Address: consulAddress})
 	if err != nil {
 		panic(err)
@@ -47,6 +46,7 @@ func NewLifeCycle(cadvisorBaseUrl string, consulAddress string) LifeCycle {
 	cid := strings.TrimSpace(string(out))
 
 	return LifeCycle{
+		tenantId: tenantId,
 		cid:      cid,
 		consul:   consul,
 		cadvisor: cadvisor,
@@ -57,7 +57,7 @@ func (d LifeCycle) Register() error {
 	agent := d.consul.Agent()
 	service := &api.AgentServiceRegistration{
 		ID:                d.cid,
-		Name:              "chukonu",
+		Name:              d.tenantId,
 		Tags:              nil,
 		Port:              7426,
 		Address:           d.cid,
@@ -78,6 +78,7 @@ func (d LifeCycle) Run(testplanName string) {
 	sym, _ := p.Lookup("TestPlan")
 	requestProvider := sym.(core.RequestProvider)
 
+	// TODO: get config from consul
 	config := core.ChukonuConfig{Concurrency: 1000, RequestTimeout: 5 * time.Minute}
 	var engines []core.Engine = make([]core.Engine, config.Concurrency)
 	for i := 0; i < config.Concurrency; i++ {
@@ -89,7 +90,7 @@ func (d LifeCycle) Run(testplanName string) {
 	ack := make(chan bool, 1)
 	fuse <- true
 	go func(fuse chan bool, ack chan bool) {
-		var workerCount uint32 = 0
+		var workerCount uint64 = 0
 		for b := range ack {
 			if !b {
 				return
@@ -132,10 +133,10 @@ func (d LifeCycle) Run(testplanName string) {
 
 		// save workerCount to consul
 		kv := d.consul.KV()
-		workerCountB := make([]byte, 4)
-		binary.LittleEndian.PutUint32(workerCountB, workerCount)
+		workerCountB := make([]byte, 8)
+		binary.LittleEndian.PutUint64(workerCountB, workerCount)
 		kvpair := &api.KVPair{
-			Key:   fmt.Sprintf("%s/workercount", d.cid),
+			Key:   fmt.Sprintf("%s/workercount/%s", d.tenantId, d.cid),
 			Value: workerCountB,
 		}
 		_, err := kv.Put(kvpair, nil)
@@ -157,6 +158,7 @@ func (d LifeCycle) done() {
 	}
 }
 
+var tenantId = flag.String("tenant", "", "tenant id")
 var cadvisorBaseUrl = flag.String("cadvisor", "http://localhost:8080/", "base url for cadvisor")
 var consulAddress = flag.String("consul", "http://localhost:8500/", "consul address")
 
@@ -169,7 +171,7 @@ func main() {
 	go func() {
 		http.ListenAndServe("localhost:6060", nil)
 	}()
-	l := NewLifeCycle(*cadvisorBaseUrl, *consulAddress)
+	l := NewLifeCycle(*tenantId, *cadvisorBaseUrl, *consulAddress)
 	l.Register()
 	l.Run("druidtestplan.so")
 }

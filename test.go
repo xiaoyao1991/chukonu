@@ -1,5 +1,6 @@
-package main
+package other
 
+<<<<<<< Updated upstream
 import (
 	"context"
 	"fmt"
@@ -11,31 +12,100 @@ import (
 )
 
 // func consume(id int, queue chan int) {
+=======
+// import (
+// 	"fmt"
+// 	"net/http"
+// 	"time"
+//
+// 	"github.com/xiaoyao1991/chukonu/core"
+// 	"github.com/xiaoyao1991/chukonu/impl"
+// )
+//
+// // func consume(id int, queue chan int) {
+// // 	for {
+// // 		select {
+// // 		case j := <-queue:
+// // 			fmt.Println(fmt.Sprintf("consumer#%d: %d", id, j))
+// // 		}
+// // 	}
+// // }
+// //
+// // func main() {
+// // 	fmt.Println("Hello, playground")
+// //
+// // 	q := make(chan int)
+// // 	throttle := time.Tick(1 * time.Second)
+// //
+// // 	for i := 1; i <= 5; i++ {
+// // 		go consume(i, q)
+// // 	}
+// //
+// // 	counter := 0
+// // 	for {
+// // 		<-throttle
+// // 		q <- counter
+// // 		counter++
+// // 	}
+// // }
+//
+// type MyRequestProvider struct {
+// 	queue chan core.ChukonuRequest
+// }
+//
+// func (m *MyRequestProvider) Provide() chan core.ChukonuRequest {
+// 	if m.queue == nil {
+// 		m.queue = make(chan core.ChukonuRequest, 5)
+// 	}
+//
+// 	return m.queue
+// }
+//
+// func (m *MyRequestProvider) Gen() {
+// 	queue := m.Provide()
+//
+// 	throttle := time.Tick(200 * time.Millisecond)
+// 	i := 0
+>>>>>>> Stashed changes
 // 	for {
-// 		select {
-// 		case j := <-queue:
-// 			fmt.Println(fmt.Sprintf("consumer#%d: %d", id, j))
+// 		<-throttle
+// 		// fmt.Printf("Generating %dth request\n", i)
+// 		req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:3000/%d", i), nil)
+// 		if err != nil {
+// 			fmt.Println(err)
+// 		}
+// 		queue <- impl.ChukonuHttpRequest{Request: req}
+// 		i++
+//
+// 		if i == 100 {
+// 			break
 // 		}
 // 	}
+//
+// 	close(queue)
 // }
 //
 // func main() {
-// 	fmt.Println("Hello, playground")
+// 	config := core.ChukonuConfig{Concurrency: 5, RequestTimeout: 5 * time.Second}
+// 	httpengine := impl.NewHttpEngine(config)
+// 	var pool core.Pool
 //
-// 	q := make(chan int)
-// 	throttle := time.Tick(1 * time.Second)
+// 	// rawResp := resp.RawResponse().(*http.Response)
+// 	// defer rawResp.Body.Close()
+// 	// bodyBytes, err := ioutil.ReadAll(rawResp.Body)
+// 	// if err != nil {
+// 	// 	fmt.Println(err)
+// 	// 	return
+// 	// }
+// 	// fmt.Println(string(bodyBytes))
 //
-// 	for i := 1; i <= 5; i++ {
-// 		go consume(i, q)
-// 	}
+// 	provider := &MyRequestProvider{}
+// 	go provider.Gen()
 //
-// 	counter := 0
-// 	for {
-// 		<-throttle
-// 		q <- counter
-// 		counter++
-// 	}
+// 	//add response
+// 	pool.Start(httpengine, provider, impl.NewHttpMetricsManager(), config)
 // }
+<<<<<<< Updated upstream
 
 type MyRequestProvider struct {
 	queue chan core.ChukonuRequest
@@ -117,3 +187,5 @@ func main() {
 	// pool.Start(engines, requestProvider, requestProvider.MetricsManager(), config, fuse, ack)
 
 }
+=======
+>>>>>>> Stashed changes
