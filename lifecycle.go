@@ -38,7 +38,7 @@ func NewLifeCycle(tenantId string, cadvisorBaseUrl string, consulAddress string)
 		panic(err)
 	}
 
-	cmd := "cat /proc/self/cgroup | grep 'cpu:/' | sed 's/\\([0-9]\\):cpu:\\/docker\\///g'"
+	cmd := "cat /proc/self/cgroup | grep 'docker' | head -1 | sed 's/.*docker\\///g'"
 	out, err := exec.Command("bash", "-c", cmd).Output()
 	if err != nil {
 		panic(err)
@@ -79,7 +79,7 @@ func (d LifeCycle) Run(testplanName string) {
 	requestProvider := sym.(core.RequestProvider)
 
 	// TODO: get config from consul
-	config := core.ChukonuConfig{Concurrency: 1000, RequestTimeout: 5 * time.Minute}
+	config := core.ChukonuConfig{Concurrency: 10, RequestTimeout: 5 * time.Second}
 	var engines []core.Engine = make([]core.Engine, config.Concurrency)
 	for i := 0; i < config.Concurrency; i++ {
 		engines[i] = requestProvider.UseEngine()(config)
@@ -97,8 +97,10 @@ func (d LifeCycle) Run(testplanName string) {
 			}
 			workerCount++
 			request := v1.ContainerInfoRequest{NumStats: 2}
+			// fmt.Println(d.cadvisor.MachineInfo())
 			sInfo, err := d.cadvisor.ContainerInfo(fmt.Sprintf("/docker/%s", d.cid), &request)
 			if err != nil {
+				fmt.Print("Get ContainerInfo error: ")
 				fmt.Println(err)
 				// TODO:
 			}
@@ -142,6 +144,7 @@ func (d LifeCycle) Run(testplanName string) {
 		_, err := kv.Put(kvpair, nil)
 		if err != nil {
 			// TODO:
+			fmt.Print("save workerCount error: ")
 			fmt.Println(err)
 		}
 

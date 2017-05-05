@@ -41,6 +41,7 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 					throughputQueue <- 1
 					if err != nil {
 						// TODO: differentiate custom errors
+						fmt.Print("Http response Error: ")
 						fmt.Println(err)
 						metricsManager.RecordError(err)
 						continue
