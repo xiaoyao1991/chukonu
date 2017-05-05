@@ -7,13 +7,14 @@ import (
 	"os"
 	"time"
 
+	"context"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	docker "github.com/docker/docker/client"
 	cadvisor "github.com/google/cadvisor/client"
 	"github.com/hashicorp/consul/api"
 	"github.com/xiaoyao1991/chukonu/core"
-	"golang.org/x/net/context"
 )
 
 const ChukonuImage = "chukonu"

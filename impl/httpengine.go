@@ -6,7 +6,7 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/satori/go.uuid"
 	"github.com/xiaoyao1991/chukonu/core"

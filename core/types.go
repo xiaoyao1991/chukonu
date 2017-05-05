@@ -3,7 +3,7 @@ package core
 import (
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/satori/go.uuid"
 )

@@ -61,8 +61,14 @@ func (d LifeCycle) Register() error {
 		Port:              7426,
 		Address:           d.cid,
 		EnableTagOverride: false,
-		Check:             &api.AgentServiceCheck{DockerContainerID: d.cid}, //TODO: this doesnt work now
-		Checks:            nil,
+		Check: &api.AgentServiceCheck{
+			DockerContainerID:              d.cid,
+			Interval:                       "10s",
+			HTTP:                           fmt.Sprintf("http://localhost:8080/api/v1.0/containers/docker/%s", d.cid),
+			TLSSkipVerify:                  true,
+			DeregisterCriticalServiceAfter: "30s",
+		},
+		Checks: nil,
 	}
 	err := agent.ServiceRegister(service)
 	if err != nil {
@@ -78,7 +84,7 @@ func (d LifeCycle) Run(testplanName string) {
 	requestProvider := sym.(core.RequestProvider)
 
 	// TODO: get config from consul
-	config := core.ChukonuConfig{Concurrency: 10, RequestTimeout: 5 * time.Second}
+	config := core.ChukonuConfig{Concurrency: 10, RequestTimeout: 15 * time.Second}
 	var engines []core.Engine = make([]core.Engine, config.Concurrency)
 	for i := 0; i < config.Concurrency; i++ {
 		engines[i] = requestProvider.UseEngine()(config)

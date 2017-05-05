@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/xiaoyao1991/chukonu/core"
 	"github.com/xiaoyao1991/chukonu/impl"
