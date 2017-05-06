@@ -15,13 +15,16 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 
 	queue := make(chan *ChukonuWorkflow, config.Concurrency)
 	go provider.Provide(queue)
-	go metricsManager.MeasureThroughput() // start a goroutine to listen for atomic changes
-	go metricsManager.SampleMetrics()
-
-	throughputQueue := metricsManager.GetQueue()
+	// go metricsManager.MeasureThroughput() // start a goroutine to listen for atomic changes
+	// go metricsManager.SampleMetrics()
+	// go metricsManager.StartRecording()
+	// throughputQueue := metricsManager.GetThroughputQueue()
+	// requestQueue := metricsManager.GetRequestQueue()
+	// responseQueue := metricsManager.GetResponseQueue()
+	// errorQueue := metricsManager.GetErrorQueue()
+	throughputQueue, requestQueue, responseQueue, errorQueue := metricsManager.StartRecording()
 	startTime := time.Now()
 	var i int
-	// fmt.Printf("concurrency: %d\n", config.Concurrency)
 	for i = 0; i < config.Concurrency; i++ {
 		if fuse != nil {
 			_, ok := <-fuse
@@ -34,8 +37,7 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 			for workflow := range queue {
 				for workflow.HasNext() {
 					req := workflow.Next()
-					// metricsManager.RecordRequest(req)
-
+					requestQueue <- req
 					// fmt.Printf("goroutine %d running request...", i)
 					resp, err := engines[i].RunRequest(req)
 					throughputQueue <- 1
@@ -43,12 +45,12 @@ func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager M
 						// TODO: differentiate custom errors
 						fmt.Print("Http response Error: ")
 						fmt.Println(err)
-						metricsManager.RecordError(err)
+						errorQueue <- err
 						continue
 					} else { //TODO: what to do on error
 						workflow.PostProcess(req, resp)
 					}
-					metricsManager.RecordResponse(resp)
+					responseQueue <- resp
 				}
 
 				engines[i].ResetState()
