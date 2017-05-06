@@ -175,7 +175,7 @@ func main() {
 	//TODO: tmp
 	daemon := NewDaemon(*cadvisorBaseUrl, *consulAddress)
 	daemon.SetupTestPlan(core.ChukonuConfig{TenantId: "druidtest", Concurrency: 20, RequestTimeout: 5 * time.Minute})
-	tick := time.Tick(5 * time.Second)
+	tick := time.Tick(2 * time.Second)
 	for {
 		<-tick
 		if daemon.ShouldSpawnNewContainer("druidtest") {

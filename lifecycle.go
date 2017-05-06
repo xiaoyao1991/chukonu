@@ -44,7 +44,6 @@ func NewLifeCycle(tenantId string, cadvisorBaseUrl string, consulAddress string)
 		panic(err)
 	}
 	cid := strings.TrimSpace(string(out))
-
 	return LifeCycle{
 		tenantId: tenantId,
 		cid:      cid,
@@ -99,10 +98,11 @@ func (d LifeCycle) Run(testplanName string) {
 			request := v1.ContainerInfoRequest{NumStats: 2}
 			// fmt.Println(d.cadvisor.MachineInfo())
 			sInfo, err := d.cadvisor.ContainerInfo(fmt.Sprintf("/docker/%s", d.cid), &request)
-			if err != nil {
+			for err != nil {
 				fmt.Print("Get ContainerInfo error: ")
 				fmt.Println(err)
 				// TODO:
+				sInfo, err = d.cadvisor.ContainerInfo(fmt.Sprintf("/docker/%s", d.cid), &request)
 			}
 
 			if len(sInfo.Stats) != 2 {
@@ -149,8 +149,9 @@ func (d LifeCycle) Run(testplanName string) {
 		}
 
 	}(fuse, ack)
-
-	pool.Start(engines, requestProvider, requestProvider.MetricsManager(), config, fuse, ack)
+	metricManager := requestProvider.MetricsManager()
+	metricManager.SetConsulConfig(d.tenantId, d.cid, *consulAddress)
+	pool.Start(engines, requestProvider, metricManager, config, fuse, ack)
 }
 
 func (d LifeCycle) done() {
@@ -163,7 +164,7 @@ func (d LifeCycle) done() {
 
 var tenantId = flag.String("tenant", "", "tenant id")
 var cadvisorBaseUrl = flag.String("cadvisor", "http://localhost:8080/", "base url for cadvisor")
-var consulAddress = flag.String("consul", "http://localhost:8500/", "consul address")
+var consulAddress = flag.String("consul", "http://localhost:8500", "consul address")
 
 func init() {
 	flag.Parse()

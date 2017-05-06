@@ -12,16 +12,8 @@ type Pool struct {
 func (p Pool) Start(engines []Engine, provider RequestProvider, metricsManager MetricsManager, config ChukonuConfig, fuse chan bool, ack chan bool) {
 	var wg sync.WaitGroup
 	wg.Add(config.Concurrency)
-
 	queue := make(chan *ChukonuWorkflow, config.Concurrency)
 	go provider.Provide(queue)
-	// go metricsManager.MeasureThroughput() // start a goroutine to listen for atomic changes
-	// go metricsManager.SampleMetrics()
-	// go metricsManager.StartRecording()
-	// throughputQueue := metricsManager.GetThroughputQueue()
-	// requestQueue := metricsManager.GetRequestQueue()
-	// responseQueue := metricsManager.GetResponseQueue()
-	// errorQueue := metricsManager.GetErrorQueue()
 	throughputQueue, requestQueue, responseQueue, errorQueue := metricsManager.StartRecording()
 	startTime := time.Now()
 	var i int

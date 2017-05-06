@@ -96,6 +96,7 @@ type MetricsManager interface {
 	GetThroughput() int
 	SampleMetrics()
 	StartRecording() (chan int, chan ChukonuRequest, chan ChukonuResponse, chan error)
+	SetConsulConfig(tenantId string, cid string, consulAddress string)
 }
 
 type LogReplayer interface {
