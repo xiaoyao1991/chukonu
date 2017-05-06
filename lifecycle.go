@@ -78,13 +78,13 @@ func (d LifeCycle) Register() error {
 	return nil
 }
 
-func (d LifeCycle) Run(testplanName string) {
+func (d LifeCycle) Run(testplanName string, concurrency int) {
 	p, _ := plugin.Open(testplanName)
 	sym, _ := p.Lookup("TestPlan")
 	requestProvider := sym.(core.RequestProvider)
 
-	// TODO: get config from consul
-	config := core.ChukonuConfig{Concurrency: 10, RequestTimeout: 15 * time.Second}
+	fmt.Printf("Asked to run %d workers\n", concurrency)
+	config := core.ChukonuConfig{Concurrency: concurrency, RequestTimeout: 15 * time.Second}
 	var engines []core.Engine = make([]core.Engine, config.Concurrency)
 	for i := 0; i < config.Concurrency; i++ {
 		engines[i] = requestProvider.UseEngine()(config)
@@ -171,6 +171,7 @@ func (d LifeCycle) done() {
 var tenantId = flag.String("tenant", "", "tenant id")
 var cadvisorBaseUrl = flag.String("cadvisor", "http://localhost:8080/", "base url for cadvisor")
 var consulAddress = flag.String("consul", "http://localhost:8500", "consul address")
+var concurrency = flag.Int("concurrency", 1, "concurrency")
 
 func init() {
 	flag.Parse()
@@ -183,5 +184,5 @@ func main() {
 	}()
 	l := NewLifeCycle(*tenantId, *cadvisorBaseUrl, *consulAddress)
 	l.Register()
-	l.Run("druidtestplan.so")
+	l.Run("druidtestplan.so", *concurrency)
 }
