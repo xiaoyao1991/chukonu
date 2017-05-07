@@ -91,15 +91,12 @@ type Engine interface {
 }
 
 type MetricsManager interface {
-	RecordRequest(request ChukonuRequest)
-	RecordResponse(response ChukonuResponse)
-	RecordError(err error)
-	// RecordThroughput(throughput float64)
-	GetQueue() chan int
 	MeasureThroughput()
 	RecordThroughput(sec float64)
 	GetThroughput() int
 	SampleMetrics()
+	StartRecording() (chan int, chan ChukonuRequest, chan ChukonuResponse, chan error)
+	SetConsulConfig(tenantId string, cid string, consulAddress string)
 }
 
 type LogReplayer interface {
