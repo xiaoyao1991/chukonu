@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -84,6 +85,7 @@ func (m *DruidRequestProvider) Provide(queue chan *core.ChukonuWorkflow) {
 				// 	log.Fatal(err)
 				// }
 				// fmt.Println(string(dump))
+				io.Copy(ioutil.Discard, resp.RawResponse().(*http.Response).Body)
 				return ctx
 			}, nil, req)
 		}
