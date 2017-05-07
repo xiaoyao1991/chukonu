@@ -7,10 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/xiaoyao1991/chukonu/core"
 	"github.com/xiaoyao1991/chukonu/impl"
+	"golang.org/x/net/context"
 )
 
 type DruidRequestProvider struct {
@@ -32,7 +31,7 @@ func (m *DruidRequestProvider) Provide(queue chan *core.ChukonuWorkflow) {
 		workflow := core.NewWorkflow("druid_workflow")
 
 		var fn1 = func(ctx context.Context) core.ChukonuRequest {
-			req, err := http.NewRequest("GET", "http://sp17-cs525-g13-01.cs.illinois.edu:3000/druid/v2/datasources", nil)
+			req, err := http.NewRequest("GET", "http://40.71.182.255:8082/druid/v2/datasources", nil)
 			if err != nil {
 				fmt.Println(err)
 				return nil
@@ -71,7 +70,7 @@ func (m *DruidRequestProvider) Provide(queue chan *core.ChukonuWorkflow) {
             }
           ]
         }`, ctx.Value("datasource")))
-			req, err := http.NewRequest("POST", "http://sp17-cs525-g13-01.cs.illinois.edu:3000/druid/v2/", bytes.NewBuffer(jsonStr))
+			req, err := http.NewRequest("POST", "http://40.71.182.255:8082/druid/v2/", bytes.NewBuffer(jsonStr))
 			req.Header.Set("Content-Type", "application/json")
 			if err != nil {
 				fmt.Println(err)

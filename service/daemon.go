@@ -109,8 +109,8 @@ func (d Daemon) SpawnNewContainer(tenantId string) string {
 	}, &container.HostConfig{
 		Resources: container.Resources{
 			// TODO: how do we decide what limit? should we smart calculate?
-			Memory:     int64(16 * BytesInMB),
-			MemorySwap: int64(20 * BytesInMB),
+			Memory:     int64(40 * BytesInMB),
+			MemorySwap: int64(50 * BytesInMB),
 			CPUQuota:   int64(50000),
 			CPUPeriod:  int64(100000),
 		},
@@ -124,7 +124,7 @@ func (d Daemon) SpawnNewContainer(tenantId string) string {
 	}
 
 	// TODO: unlock consul KV table? or should we unlock it in lifecycle
-
+	fmt.Println(resp.ID)
 	return resp.ID
 }
 
@@ -140,6 +140,7 @@ func (d Daemon) ShouldSpawnNewContainer(tenantId string) bool {
 	for _, kvp := range kvs {
 		totalWorkerCount += binary.LittleEndian.Uint64(kvp.Value)
 	}
+	fmt.Println(totalWorkerCount)
 
 	result, _, err := kv.Get(fmt.Sprintf("%s/config/concurrency", tenantId), nil)
 	if err != nil {
@@ -165,7 +166,7 @@ func (d Daemon) ReportMetrics() {
 // }
 
 var cadvisorBaseUrl = flag.String("cadvisor", "http://localhost:8080/", "base url for cadvisor")
-var consulAddress = flag.String("consul", "http://localhost:8500/", "consul address")
+var consulAddress = flag.String("consul", "http://localhost:8500", "consul address")
 
 func init() {
 	flag.Parse()
@@ -173,8 +174,8 @@ func init() {
 func main() {
 	//TODO: tmp
 	daemon := NewDaemon(*cadvisorBaseUrl, *consulAddress)
-	daemon.SetupTestPlan(core.ChukonuConfig{TenantId: "druidtest", Concurrency: 1000, RequestTimeout: 5 * time.Minute})
-	tick := time.Tick(5 * time.Second)
+	daemon.SetupTestPlan(core.ChukonuConfig{TenantId: "druidtest", Concurrency: 20, RequestTimeout: 5 * time.Minute})
+	tick := time.Tick(2 * time.Second)
 	for {
 		<-tick
 		if daemon.ShouldSpawnNewContainer("druidtest") {
