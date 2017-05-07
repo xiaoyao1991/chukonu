@@ -38,13 +38,12 @@ func NewLifeCycle(tenantId string, cadvisorBaseUrl string, consulAddress string)
 		panic(err)
 	}
 
-	cmd := "cat /proc/self/cgroup | grep 'cpu:/' | sed 's/\\([0-9]\\):cpu:\\/docker\\///g'"
+	cmd := "cat /proc/self/cgroup | grep 'docker' | head -1 | sed 's/.*docker\\///g'"
 	out, err := exec.Command("bash", "-c", cmd).Output()
 	if err != nil {
 		panic(err)
 	}
 	cid := strings.TrimSpace(string(out))
-
 	return LifeCycle{
 		tenantId: tenantId,
 		cid:      cid,
@@ -79,7 +78,7 @@ func (d LifeCycle) Run(testplanName string) {
 	requestProvider := sym.(core.RequestProvider)
 
 	// TODO: get config from consul
-	config := core.ChukonuConfig{Concurrency: 1000, RequestTimeout: 5 * time.Minute}
+	config := core.ChukonuConfig{Concurrency: 10, RequestTimeout: 5 * time.Second}
 	var engines []core.Engine = make([]core.Engine, config.Concurrency)
 	for i := 0; i < config.Concurrency; i++ {
 		engines[i] = requestProvider.UseEngine()(config)
@@ -97,10 +96,13 @@ func (d LifeCycle) Run(testplanName string) {
 			}
 			workerCount++
 			request := v1.ContainerInfoRequest{NumStats: 2}
+			// fmt.Println(d.cadvisor.MachineInfo())
 			sInfo, err := d.cadvisor.ContainerInfo(fmt.Sprintf("/docker/%s", d.cid), &request)
-			if err != nil {
+			for err != nil {
+				fmt.Print("Get ContainerInfo error: ")
 				fmt.Println(err)
 				// TODO:
+				sInfo, err = d.cadvisor.ContainerInfo(fmt.Sprintf("/docker/%s", d.cid), &request)
 			}
 
 			if len(sInfo.Stats) != 2 {
@@ -142,12 +144,14 @@ func (d LifeCycle) Run(testplanName string) {
 		_, err := kv.Put(kvpair, nil)
 		if err != nil {
 			// TODO:
+			fmt.Print("save workerCount error: ")
 			fmt.Println(err)
 		}
 
 	}(fuse, ack)
-
-	pool.Start(engines, requestProvider, requestProvider.MetricsManager(), config, fuse, ack)
+	metricManager := requestProvider.MetricsManager()
+	metricManager.SetConsulConfig(d.tenantId, d.cid, *consulAddress)
+	pool.Start(engines, requestProvider, metricManager, config, fuse, ack)
 }
 
 func (d LifeCycle) done() {
@@ -160,7 +164,7 @@ func (d LifeCycle) done() {
 
 var tenantId = flag.String("tenant", "", "tenant id")
 var cadvisorBaseUrl = flag.String("cadvisor", "http://localhost:8080/", "base url for cadvisor")
-var consulAddress = flag.String("consul", "http://localhost:8500/", "consul address")
+var consulAddress = flag.String("consul", "http://localhost:8500", "consul address")
 
 func init() {
 	flag.Parse()
