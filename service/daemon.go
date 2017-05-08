@@ -5,7 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
+
+	"context"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -13,7 +16,6 @@ import (
 	cadvisor "github.com/google/cadvisor/client"
 	"github.com/hashicorp/consul/api"
 	"github.com/xiaoyao1991/chukonu/core"
-	"golang.org/x/net/context"
 )
 
 const ChukonuImage = "chukonu"
@@ -103,9 +105,26 @@ func (d Daemon) SpawnNewContainer(tenantId string) string {
 
 	// TODO: lock consul KV table
 
+	// calculate concurrency
+	kv := d.consul.KV()
+	kvs, _, err := kv.List(fmt.Sprintf("%s/workercount", tenantId), nil)
+	if err != nil {
+		panic(err)
+	}
+	var totalWorkerCount uint64
+	for _, kvp := range kvs {
+		totalWorkerCount += binary.LittleEndian.Uint64(kvp.Value)
+	}
+
+	result, _, err := kv.Get(fmt.Sprintf("%s/config/concurrency", tenantId), nil)
+	if err != nil {
+		panic(err)
+	}
+	concurrency := binary.LittleEndian.Uint64(result.Value)
+
 	resp, err := d.docker.ContainerCreate(ctx, &container.Config{
 		Image: ChukonuImage,
-		Cmd:   []string{"-tenant", tenantId, "-cadvisor", d.cadvisorBaseUrl, "-consul", d.consulAddr},
+		Cmd:   []string{"-tenant", tenantId, "-cadvisor", d.cadvisorBaseUrl, "-consul", d.consulAddr, "-concurrency", strconv.Itoa(int(concurrency - totalWorkerCount))},
 	}, &container.HostConfig{
 		Resources: container.Resources{
 			// TODO: how do we decide what limit? should we smart calculate?
@@ -148,22 +167,26 @@ func (d Daemon) ShouldSpawnNewContainer(tenantId string) bool {
 	}
 	concurrency := binary.LittleEndian.Uint64(result.Value)
 
+	agent := d.consul.Agent()
+	services, err := agent.Services()
+	if err != nil {
+		panic(err)
+	}
+	countServices := 0
+	for _, v := range services {
+		if v.Service == tenantId {
+			countServices++
+		}
+	}
+
+	if countServices > len(kvs) {
+		fmt.Println("Some containers haven't stablize yet, let's give it some time...")
+	}
+
+	fmt.Println(totalWorkerCount)
 	// TODO: take node resource into consideration
-	return totalWorkerCount < concurrency
+	return totalWorkerCount < concurrency && countServices == len(kvs)
 }
-
-// TODO: aggregate metrics
-func (d Daemon) ReportMetrics() {
-
-}
-
-// TODO: spawn new node when the residing node is out of resource
-// func (d Daemon) SpawnNewNode() {
-//
-// }
-// func (d Daemon) ShouldSpawnNewNode() bool {
-// 	return false
-// }
 
 var cadvisorBaseUrl = flag.String("cadvisor", "http://localhost:8080/", "base url for cadvisor")
 var consulAddress = flag.String("consul", "http://localhost:8500", "consul address")
@@ -174,8 +197,8 @@ func init() {
 func main() {
 	//TODO: tmp
 	daemon := NewDaemon(*cadvisorBaseUrl, *consulAddress)
-	daemon.SetupTestPlan(core.ChukonuConfig{TenantId: "druidtest", Concurrency: 20, RequestTimeout: 5 * time.Minute})
-	tick := time.Tick(2 * time.Second)
+	daemon.SetupTestPlan(core.ChukonuConfig{TenantId: "druidtest", Concurrency: 200, RequestTimeout: 5 * time.Minute})
+	tick := time.Tick(5 * time.Second)
 	for {
 		<-tick
 		if daemon.ShouldSpawnNewContainer("druidtest") {

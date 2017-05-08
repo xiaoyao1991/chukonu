@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/xiaoyao1991/chukonu/core"
 	"github.com/xiaoyao1991/chukonu/impl"
-	"golang.org/x/net/context"
 )
 
 type DruidRequestProvider struct {

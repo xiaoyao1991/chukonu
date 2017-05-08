@@ -1,12 +1,13 @@
 package impl
 
 import (
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httputil"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/satori/go.uuid"
 	"github.com/xiaoyao1991/chukonu/core"
@@ -115,7 +116,18 @@ func NewHttpEngine(config core.ChukonuConfig) core.Engine {
 		Client: http.Client{
 			Timeout: config.RequestTimeout,
 			Jar:     jar,
-			// Transport: &http.Transport{},
+			Transport: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				DialContext: (&net.Dialer{
+					Timeout:   30 * time.Second,
+					KeepAlive: 30 * time.Second,
+				}).DialContext,
+				MaxIdleConnsPerHost:   config.Concurrency,
+				MaxIdleConns:          config.Concurrency,
+				IdleConnTimeout:       90 * time.Second,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ExpectContinueTimeout: 1 * time.Second,
+			},
 		},
 	}
 }

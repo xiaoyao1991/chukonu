@@ -52,7 +52,6 @@ func (m *HttpMetricsManager) RecordResponse(response core.ChukonuResponse) {
 	} else {
 		panic("Response not a HTTPResponse")
 	}
-
 }
 func (m *HttpMetricsManager) RecordError(err error) {
 	m.numErrors += 1
